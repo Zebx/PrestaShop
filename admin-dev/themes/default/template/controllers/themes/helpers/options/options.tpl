@@ -24,30 +24,112 @@
 *}
 {extends file="helpers/options/options.tpl"}
 
-{block name="field"}
+{block name="input"}
 	{if $field['type'] == 'theme'}
 		{if $field['can_display_themes']}
+			{if $field.themes|count > 0}
+			<div class="col-lg-12">
+				<a class="btn btn-link pull-right" href="{$field['addons_link']}" onclick="return !window.open(this.href)"><i class="icon icon-share-alt"></i> {l s='Visit the theme store'}</a>
+			</div>
 			<div class="col-lg-12">
 				<div class="row">
-				{foreach $field.themes as $theme}
-					<div class="col-lg-2 {if $theme->id == $field['id_theme']}select_theme_choice{/if}" onclick="$(this).find('input').attr('checked', true); $('.select_theme').removeClass('select_theme_choice'); $(this).toggleClass('select_theme_choice');">
-						<div class="radio">
-							<label>
-								<input type="radio" name="id_theme" value="{$theme->id}" {if $theme->id == $field['id_theme']}checked="checked"{/if} /> {$theme->name}
-							</label>
+					{foreach $field.themes as $theme}
+						<div class="col-lg-3">
+							<div class="theme_container">
+								<h4>{l s='Theme name: %s' sprintf=$theme.name}</h4>
+								<div class="thumbnail-wrapper" style="display: inline;">
+									<div class="action-wrapper" style="position: absolute;display:none;">
+										<div class="action-overlay" style="position: absolute; width: 100%; height: 100%; background: black; opacity: 0.7;"></div>
+										<div class="action-buttons" style="position: absolute; width: 100%; top: 45%; text-align: center;">
+											<div class="btn-group">
+												<a href="{$link->getAdminLink('AdminThemes')|addslashes}&submitOptionstheme&id_theme={$theme.id}" class="btn btn-default">
+													<i class="icon-check"></i> {l s='Use this theme'}
+												</a>
+												<button class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+													<i class="icon-caret-down"></i>&nbsp;
+												</button>
+												<ul class="dropdown-menu">
+													<li>
+														<a href="{$link->getAdminLink('AdminThemes')|addslashes}&deletetheme&id_theme={$theme.id}" title="{l s='Delete this theme'}" class="delete">
+															<i class="icon-trash"></i> {l s='Delete this theme'}
+														</a>
+													</li>
+												</ul>
+											</div>
+										</div>
+									</div>
+									<img class="img-thumbnail" src="{$theme.preview}" alt="{$theme.name}" style="min-width: 180px;" />
+								</div>
+
+							</div>
 						</div>
-						<div class="theme_container">
-							<img class="img-thumbnail" src="../themes/{$theme->directory}/preview.jpg" alt="{$theme->directory}" />
-						</div>
-					</div>
-				{/foreach}
+					{/foreach}
 				</div>
 			</div>
+			{/if}
 		{/if}
 	{else}
 		{$smarty.block.parent}
 	{/if}
 {/block}
+
+
+{block name="footer"}
+
+	{if isset($categoryData['after_tabs'])}
+		{assign var=cur_theme value=$categoryData['after_tabs']['cur_theme']}
+		<div class="row" style="margin-top: 64px;">
+			<div class="col-md-3" style="text-align: center;">
+				<a href="{$base_url}">
+					<img src="../themes/{$cur_theme.theme_directory}/preview.jpg">
+				</a>
+			</div>
+			<div id="js_theme_form_container" class="col-md-9">
+				<h2>{$cur_theme.theme_name} <small>version {$cur_theme.theme_version}</small></h2>
+				<p>
+					{l s='Designed by %s' sprintf=$cur_theme.author_name}
+					{if isset($cur_theme.author_url) && $cur_theme.author_url != ''}
+					 | <a href="{$cur_theme.author_url}" onclick="return !window.open(this.href)">{$cur_theme.author_url}</a>
+					{/if}
+					{if isset($cur_theme.author_email) && $cur_theme.author_email != ''}
+					 | <a href="mailto:{$cur_theme.author_email}" onclick="return !window.open(this.href)">{$cur_theme.author_email}</a>
+					{/if}
+				</p>
+
+				{if isset($cur_theme.tc) && $cur_theme.tc}
+				<hr style="margin 24px 0;">
+				<div class="row">
+					<div class="col-md-8 col-sm-8">
+						<h4>{l s='Customize your theme'}</h4>
+						<p>{l s='Customize the main elements of your theme: sliders, banners, colors, etc.'}</p>
+					</div>
+					<div class="col-md-4 col-sm-4" style="text-align:center;">
+						<h4>&nbsp;</h4>
+						<a class="btn btn-default" href="{$link->getAdminLink('AdminModules')|addslashes}&configure=themeconfigurator"><i class="icon icon-list-alt"></i> {l s='Theme Configurator'}</a>
+					</div>
+				</div>
+				{/if}
+
+				<hr style="margin 24px 0;">
+				<div class="row">
+					<div class="col-md-8 col-sm-8">
+						<h4>{l s='Configure your theme'}</h4>
+						<p>{l s='Configure your theme\'s advanced settings, such as the number of columns you want for each page. Mostly for advanced users.'}</p>
+					</div>
+					<div class="col-md-4 col-sm-4" style="text-align:center;">
+						<h4>&nbsp;</h4>
+						<a href="{$link->getAdminLink('AdminThemes')|addslashes}&updatetheme&id_theme={$cur_theme.theme_id}" class="btn btn-default"><i class="icon icon-cog"></i> {l s='Advanced settings'}</a>
+					</div>
+				</div>
+			</div>
+		</div>
+
+	{/if}
+
+	{$smarty.block.parent}
+
+{/block}
+
 
 {block name="after"}
 	<div class="panel clearfix" id="prestastore-content"></div>
@@ -70,5 +152,10 @@
 				$("#prestastore-content").html("<h3><i class='icon-picture-o'></i> {l s='Live from PrestaShop Addons!'}</h3>"+htmlData);
 			}
 		});
+
+		// These variable will move the form to another location
+		var formToMove = "appearance";
+		var formDestination = "js_theme_form_container";
 	</script>
 {/block}
+

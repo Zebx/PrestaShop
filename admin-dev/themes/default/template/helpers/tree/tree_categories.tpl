@@ -61,17 +61,15 @@
 				{
 					if ($(this).val() == datum.id_category)
 					{
+						{if (!(isset($use_checkbox) && $use_checkbox == true))}
+							$("#{$id} label").removeClass("tree-selected");
+						{/if}
 						$(this).prop("checked", true);
 						$(this).parent().addClass("tree-selected");
-						$(this).parents("ul.tree").each(
-							function()
-							{
-								$(this).children().children().children(".icon-folder-close")
-									.removeClass("icon-folder-close")
-									.addClass("icon-folder-open");
-								$(this).show();
-							}
-						);
+						$(this).parents('ul.tree').each(function(){
+							$(this).show();
+							$(this).prev().find('.icon-folder-close').removeClass('icon-folder-close').addClass('icon-folder-open');	
+						});
 					}
 				}
 			);
@@ -79,14 +77,6 @@
 	{/if}
 	$(document).ready(function () {
 		$("#{$id}").tree("collapseAll");
-		$("#{$id}").find(":input[type=radio]").click(
-			function()
-			{
-				location.href = location.href.replace(
-					/&id_category=[0-9]*/, "")+"&id_category="
-					+$(this).val();
-			}
-		);
 
 		{if isset($selected_categories)}
 			{assign var=imploded_selected_categories value='","'|implode:$selected_categories}
@@ -99,15 +89,10 @@
 					{
 						$(this).prop("checked", true);
 						$(this).parent().addClass("tree-selected");
-						$(this).parents("ul.tree").each(
-							function()
-							{
-								$(this).children().children().children(".icon-folder-close")
-									.removeClass("icon-folder-close")
-									.addClass("icon-folder-open");
-								$(this).show();
-							}
-						);
+						$(this).parents('ul.tree').each(function(){
+							$(this).show();
+							$(this).prev().find('.icon-folder-close').removeClass('icon-folder-close').addClass('icon-folder-open');	
+						});
 					}
 				}
 			);

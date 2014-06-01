@@ -40,7 +40,6 @@
 	{if isset($virtual_cart) && $virtual_cart}
 		<input id="input_virtual_carrier" class="hidden" type="hidden" name="id_carrier" value="0" />
 	{else}
-		<p class="carrier_title">{l s='Choose your delivery method'}</p>
 		<div id="HOOK_BEFORECARRIER">
 			{if isset($carriers) && isset($HOOK_BEFORECARRIER)}
 				{$HOOK_BEFORECARRIER}
@@ -202,6 +201,16 @@
 						{/foreach}
 					{/if}
 				</div> <!-- end delivery_options_address -->
+				{if $opc}
+					<p class="carrier_title">{l s='Leave a message'}</p>
+					<div>
+						<p>{l s='If you would like to add a comment about your order, please write it in the field below.'}</p>
+						<textarea class="form-control" cols="120" rows="2" name="message" id="message">{strip}
+							{if isset($oldMessage)}{$oldMessage|escape:'html':'UTF-8'}{/if}
+						{/strip}</textarea>
+					</div>
+					<hr style="" />
+				{/if}
 				<div id="extra_carrier" style="display: none;"></div>
 					{if $giftAllowed}
 						<p class="carrier_title">{l s='Gift'}</p>
@@ -229,10 +238,13 @@
 								{/if}
 							</label>
 						</p>
-						<p id="gift_div" class="form-group">
+						<p id="gift_div">
 							<label for="gift_message">{l s='If you\'d like, you can add a note to the gift:'}</label>
-							<textarea rows="5" cols="35" id="gift_message" class="form-control" name="gift_message">{$cart->gift_message|escape:'html':'UTF-8'}</textarea>
+							<textarea rows="2" cols="120" id="gift_message" class="form-control" name="gift_message">{$cart->gift_message|escape:'html':'UTF-8'}</textarea>
 						</p>
+						{if $opc}
+							<hr style="" />
+						{/if}
 					{/if}
 				{/if}
 			{/if}
@@ -305,6 +317,8 @@
 	{addJsDef orderUrl=$link->getPageLink("order", true)|addslashes}
 	{addJsDefL name=txtProduct}{l s='Product' js=1}{/addJsDefL}
 	{addJsDefL name=txtProducts}{l s='Products' js=1}{/addJsDefL}
+{/if}
+{if $conditions}
 	{addJsDefL name=msg_order_carrier}{l s='You must agree to the terms of service before continuing.' js=1}{/addJsDefL}
 {/if}
 {/strip}

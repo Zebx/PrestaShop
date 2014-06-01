@@ -435,17 +435,17 @@ function selectCheckbox(obj)
 	$(obj).parent().parent().find('td.cancelCheck input[type=checkbox]').attr("checked", true);
 }
 
-function toggleShippingCost(obj)
+function toggleShippingCost()
 {
-	generateDiscount = $(obj).parent().find('#generateDiscount').attr("checked");
-	generateCreditSlip = $(obj).parent().find('#generateCreditSlip').attr("checked");
+	generateDiscount = $('#generateDiscount').attr("checked");
+	generateCreditSlip = $('#generateCreditSlip').attr("checked");
 	if (generateDiscount != 'checked' && generateCreditSlip != 'checked')
 	{
-		$(obj).parent().find('#spanShippingBack input[type=checkbox]').attr("checked", false);
-		$(obj).parent().find('#spanShippingBack').css('display', 'none');
+		$('#spanShippingBack input[type=checkbox]').attr("checked", false);
+		$('#spanShippingBack').css('display', 'none');
 	}
 	else
-		$(obj).parent().find('#spanShippingBack').css('display', 'block');
+		$('#spanShippingBack').css('display', 'block');
 }
 
 function orderOverwriteMessage(sl, text)
@@ -493,6 +493,7 @@ function stockManagementActivationAuthorization()
 		getE('PS_FORCE_ASM_NEW_PRODUCT_off').checked = true;
 		getE('PS_FORCE_ASM_NEW_PRODUCT_on').disabled = 'disabled';
 		getE('PS_FORCE_ASM_NEW_PRODUCT_off').disabled = 'disabled';
+		getE('PS_DEFAULT_WAREHOUSE_NEW_PRODUCT').disabled = 'disabled';
 	}
 }
 
@@ -502,12 +503,14 @@ function advancedStockManagementActivationAuthorization()
 	{
 		getE('PS_FORCE_ASM_NEW_PRODUCT_on').disabled = false;
 		getE('PS_FORCE_ASM_NEW_PRODUCT_off').disabled = false;
+		getE('PS_DEFAULT_WAREHOUSE_NEW_PRODUCT').disabled = false;
 	}
 	else
 	{
 		getE('PS_FORCE_ASM_NEW_PRODUCT_off').checked = true;
 		getE('PS_FORCE_ASM_NEW_PRODUCT_on').disabled = 'disabled';
 		getE('PS_FORCE_ASM_NEW_PRODUCT_off').disabled = 'disabled';
+		getE('PS_DEFAULT_WAREHOUSE_NEW_PRODUCT').disabled = 'disabled';
 	}
 }
 
@@ -730,9 +733,39 @@ function showNoticeMessage(msg) {
 
 $(document).ready(function()
 {
+	if (typeof helper_tabs != 'undefined' && typeof unique_field_id != 'undefined')
+	{
+		$.each(helper_tabs, function(index) {
+			$('#'+unique_field_id+'fieldset_'+index+' .form-wrapper').prepend('<div class="tab-content panel" />');
+			$('#'+unique_field_id+'fieldset_'+index+' .form-wrapper').prepend('<ul class="nav nav-tabs" />');
+			$.each(helper_tabs[index], function(key, value) {
+				// Move every form-group into the correct .tab-content > .tab-pane
+				$('#'+unique_field_id+'fieldset_'+index+' .tab-content').append('<div id="'+key+'" class="tab-pane" />');
+				var elemts = $('#'+unique_field_id+'fieldset_'+index).find("[data-tab-id='" + key + "']");
+				$(elemts).appendTo('#'+key);
+				// Add the item to the .nav-tabs
+				if (elemts.length != 0)
+					$('#'+unique_field_id+'fieldset_'+index+' .nav-tabs').append('<li><a href="#'+key+'" data-toggle="tab">'+value+'</a></li>');
+			});
+			// Activate the first tab
+			$('#'+unique_field_id+'fieldset_'+index+' .tab-content div').first().addClass('active');
+			$('#'+unique_field_id+'fieldset_'+index+' .nav-tabs li').first().addClass('active');
+		});
+	}
+
+	if (typeof formToMove != 'undefined' && typeof formDestination != 'undefined' )
+	{
+		$('<hr style="margin 24px 0;" />').appendTo('#'+formDestination)
+		$('#theme_fieldset_'+formToMove+' .form-wrapper').appendTo('#'+formDestination);
+	}
+
 	$('select.chosen').each(function(k, item){
 		$(item).chosen({disable_search_threshold: 10});
 	});
+	// Apply chosen() when modal is loaded
+	$(document).on('shown.bs.modal', function (e) {
+		$('select.chosen-modal').chosen();
+	})
 
 	$('.isInvisible input, .isInvisible select, .isInvisible textarea').attr('disabled', true);
 	$('.isInvisible label.conf_title').addClass('isDisabled');
@@ -808,7 +841,9 @@ $(document).ready(function()
 	});
 	
 	bindTabModuleListAction();
-
+	
+	bindAddonsButtons();
+	
 	//Check filters value on submit filter
 	$("[name='submitFilter']").click(function(event) {
 		var list_id = $(this).data('list-id');
@@ -872,6 +907,17 @@ $(document).ready(function()
 			}
 		});
 	}); // end bind
+
+	$(document).on('click', '.untrustedaddon', function(e){
+		e.preventDefault();
+		var moduleName = $(this).data('module-name');
+		var moduleLink = $(this).data('link');
+		var addonsSearchLink = 'http://addons.prestashop.com/en/search?search_query='+encodeURIComponent(moduleName)+'&utm_source=back-office&utm_medium=addons-certified&utm_campaign=back-office-'+iso_user.toUpperCase();
+
+		$('.modal .module-name-placeholder').text(moduleName);
+		$('.modal #proceed-install-anyway').attr('href', moduleLink);
+		$('.modal .catalog-link').attr('href', addonsSearchLink);
+	});
 
 	// if count errors
 	$('#hideError').on('click', function(e)
@@ -1084,7 +1130,7 @@ function quickSelect(elt)
 
 function changeEmployeeLanguage()
 {
-	if (allowEmployeeFormLang)
+	if (typeof allowEmployeeFormLang !== 'undefined' && allowEmployeeFormLang)
 		$.post("index.php", {
 			action: 'formLanguage', 
 			tab: 'AdminEmployees',
@@ -1127,7 +1173,8 @@ function sendBulkAction(form, action)
 	$(form).submit();
 }
 
-function openModulesList() {
+function openModulesList() 
+{
 	if (!modules_list_loaded)
 	{
 		$.ajax({
@@ -1146,6 +1193,7 @@ function openModulesList() {
 				$('#modules_list_container_tab').html(data).slideDown();
 				$('#modules_list_loader').hide();
 				modules_list_loaded = true;
+				$('.help-tooltip').tooltip();
 			}
 		});
 	}
@@ -1155,6 +1203,80 @@ function openModulesList() {
 		$('#modules_list_loader').hide();
 	}
 	return false;
+}
+
+function bindAddonsButtons()
+{
+	// Method to log on PrestaShop Addons WebServices
+	$('#addons_login_button').click(function()
+	{
+		var username_addons = $("#username_addons").val();
+		var password_addons = $("#password_addons").val();
+		try
+		{
+			resAjax = $.ajax({
+				type:"POST",
+				url : admin_modules_link,
+				async: true,
+				data : {
+					ajax : "1",
+					controller : "AdminModules",
+					action : "logOnAddonsWebservices",
+					username_addons : username_addons,
+					password_addons : password_addons
+				},
+				beforeSend: function(xhr){
+					$('#addons_loading').html('<img src="../img/loader.gif" alt="" border="0" />');
+				},
+				success : function(data){
+					if (data == 'OK')
+					{
+						$('#addons_loading').html('');
+						$('#addons_login_div').fadeOut();
+						window.location.href = currentIndex + '&conf=32' + '&token=' + token;
+					}
+					else
+						$('#addons_loading').html(errorLogin);
+				}
+			});
+		}
+		catch(e){}
+		return false;
+	});
+	
+	// Method to log out PrestaShop Addons WebServices
+	$('#addons_logout_button').click(function()
+	{
+		try
+		{
+			resAjax = $.ajax({
+				type:"POST",
+				url : admin_modules_link,
+				async: true,
+				data : {
+					ajax : "1",
+					controller : "AdminModules",
+					action : "logOutAddonsWebservices"
+				},
+				beforeSend: function(xhr){
+					$('#addons_loading').html('<img src="../img/loader.gif" alt="" border="0" />');
+				},
+				success: function(data) {
+					if (data == 'OK')
+					{
+						$('#addons_loading').html('');
+						$('#addons_login_div').fadeOut();
+						window.location.reload();
+					}
+					else
+						$('#addons_loading').html(errorLogin);
+				}
+			});
+		}
+		catch(e){}
+		return false;
+	});
+
 }
 
 function ajaxStates(id_state_selected)

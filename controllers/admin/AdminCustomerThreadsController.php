@@ -166,7 +166,7 @@ class AdminCustomerThreadsControllerCore extends AdminController
 					),
 					'PS_SAV_IMAP_DELETE_MSG' => array(
 						'title' => $this->l('Delete messages'),
-						'hint' => $this->l('Delete messages after synchronization. If you do not enable this option, the synchrozination will take more time.'),
+						'hint' => $this->l('Delete messages after synchronization. If you do not enable this option, the synchronization will take more time.'),
 						'type' => 'bool',
 					),
 					'PS_SAV_IMAP_CREATE_THREADS' => array(
@@ -240,6 +240,8 @@ class AdminCustomerThreadsControllerCore extends AdminController
 				ON (cl.`id_contact` = a.`id_contact` AND cl.`id_lang` = '.(int)$this->context->language->id.')';
 
 		$this->_group = 'GROUP BY cm.id_customer_thread';
+		$this->_orderBy = 'id_customer_thread';
+		$this->_orderWay = 'DESC';
 
 		$contacts = CustomerThread::getContacts();
 
@@ -491,6 +493,7 @@ class AdminCustomerThreadsControllerCore extends AdminController
 		$helper->id = 'box-pending-messages';
 		$helper->icon = 'icon-envelope';
 		$helper->color = 'color1';
+		$helper->href = $this->context->link->getAdminLink('AdminCustomerThreads');
 		$helper->title = $this->l('Pending Discussion Threads', null, null, false);
 		if (ConfigurationKPI::get('PENDING_MESSAGES') !== false)
 			$helper->value = ConfigurationKPI::get('PENDING_MESSAGES');
@@ -540,6 +543,12 @@ class AdminCustomerThreadsControllerCore extends AdminController
 		$employees = Employee::getEmployees();
 
 		$messages = CustomerThread::getMessageCustomerThreads($id_customer_thread);
+		
+		foreach ($messages as $key => $mess)
+			if (isset($mess['file_name']) && $mess['file_name'] != '')
+				$messages[$key]['file_name'] = _THEME_PROD_PIC_DIR_.$mess['file_name'];
+			else
+				unset($messages[$key]['file_name']);
 
 		$next_thread = CustomerThread::getNextThread((int)$thread->id);
 		
@@ -665,7 +674,7 @@ class AdminCustomerThreadsControllerCore extends AdminController
 		$timeline = array();
 		foreach ($messages as $message)
 		{
-			$content = $this->l('Message to: ').'<span class="badge">'.$message['subject'].'</span></br>'.$message['message'];
+			$content = $this->l('Message to: ').' <span class="badge">'.(!$message['id_employee'] ? $message['subject'] : $message['customer_name']).'</span></br>'.$message['message'];
 			
 			$timeline[$message['date_add']][] = array(
 				'arrow' => 'left',
@@ -697,7 +706,7 @@ class AdminCustomerThreadsControllerCore extends AdminController
 				);
 			}
 		}
-		ksort($timeline);
+		krsort($timeline);
 		return $timeline;
 	}
 	
@@ -801,7 +810,7 @@ class AdminCustomerThreadsControllerCore extends AdminController
 		$id_thread = Tools::getValue('id_thread');
 		$messages = CustomerThread::getMessageCustomerThreads($id_thread);		
 		if (count($messages))
-			Db::getInstance()->execute('UPDATE '._DB_PREFIX_.'customer_message set `read` = 1');
+			Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'customer_message` set `read` = 1 WHERE `id_employee` = '.(int)$this->context->employee->id.' AND `id_customer_thread` = '.(int)$id_thread);
 	}
 	
 	public function ajaxProcessSyncImap()

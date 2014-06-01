@@ -48,7 +48,7 @@
 		<ul class="breadcrumb page-breadcrumb">
 
 			{* Shop *}
-			{if $is_multishop && $shop_list && ($multishop_context & Shop::CONTEXT_GROUP || $multishop_context & Shop::CONTEXT_SHOP)}
+			{if isset($is_multishop) && $is_multishop && $shop_list && (isset($multishop_context) && $multishop_context & Shop::CONTEXT_GROUP || $multishop_context & Shop::CONTEXT_SHOP)}
 				<li class="breadcrumb-multishop">
 					{$shop_list}
 				</li>
@@ -89,13 +89,13 @@
 		{block name=toolbarBox}
 		<div class="page-bar toolbarBox">
 			<div class="btn-toolbar">
-				<a href="#" class="toolbar_btn dropdown-toolbar" class="navbar-toggle" data-toggle="collapse" data-target="#toolbar-nav"><i class="process-icon-dropdown"></i><span>{l s='Menu'}</span></a>
+				<a href="#" class="toolbar_btn dropdown-toolbar navbar-toggle" data-toggle="collapse" data-target="#toolbar-nav"><i class="process-icon-dropdown"></i><span>{l s='Menu'}</span></a>
 				<ul id="toolbar-nav" class="nav nav-pills pull-right collapse navbar-collapse">
 					{foreach from=$toolbar_btn item=btn key=k}
 					{if $k != 'back' && $k != 'modules-list'}
 					<li>
-						<a id="page-header-desc-{$table}-{if isset($btn.imgclass)}{$btn.imgclass|escape}{else}{$k}{/if}" class="toolbar_btn" {if isset($btn.href)}href="{$btn.href|escape}"{/if} title="{$btn.desc|escape}" {if isset($btn.target) && $btn.target}target="_blank"{/if}{if isset($btn.js) && $btn.js}onclick="{$btn.js}"{/if}>
-							<i class="{if isset($btn.icon)}{$btn.icon|escape}{else}process-icon-{if isset($btn.imgclass)}{$btn.imgclass|escape}{else}{$k}{/if}{/if} {if isset($btn.class)}{$btn.class|escape}{/if}" ></i>
+						<a id="page-header-desc-{$table}-{if isset($btn.imgclass)}{$btn.imgclass|escape}{else}{$k}{/if}" class="toolbar_btn" {if isset($btn.href)}href="{$btn.href|escape}"{/if} title="{$btn.desc|escape}" {if isset($btn.target) && $btn.target}target="_blank"{/if}{if isset($btn.js) && $btn.js}onclick="{$btn.js}"{/if} {if isset($btn.modal_target) && $btn.modal_target}data-target="{$btn.modal_target}" data-toggle="modal"{/if}>
+							<i class="{if isset($btn.icon)}{$btn.icon|escape}{else}process-icon-{if isset($btn.imgclass)}{$btn.imgclass|escape}{else}{$k}{/if}{/if} {if isset($btn.class)}{$btn.class|escape}{/if}"></i>
 							<span {if isset($btn.force_desc) && $btn.force_desc == true } class="locked" {/if}>{$btn.desc|escape}</span>
 						</a>
 					</li>
@@ -119,7 +119,7 @@
 					{/if}
 				</ul>
 
-				<script language="javascript" type="text/javascript">
+				<script type="text/javascript">
 				//<![CDATA[
 					var modules_list_loaded = false;
 

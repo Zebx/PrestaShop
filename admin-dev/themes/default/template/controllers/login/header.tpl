@@ -42,9 +42,10 @@
 		{foreach from=$js_files item=js_uri}
 			<script type="text/javascript" src="{$js_uri}"></script>
 		{/foreach}
+		<script type="text/javascript" src="../js/login.js?{$smarty.now}"></script>
 		<link rel="icon" type="image/vnd.microsoft.icon" href="{$img_dir}favicon.ico" />
 		<link rel="shortcut icon" type="image/x-icon" href="{$img_dir}favicon.ico" />
 	</head>
-	<body class="bootstrap">
+	<body class="ps_back-office bootstrap">
 		<div id="login">
 			<div id="content">

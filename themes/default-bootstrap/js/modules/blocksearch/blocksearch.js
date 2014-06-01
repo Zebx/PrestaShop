@@ -26,8 +26,6 @@
 var instantSearchQueries = [];
 $(document).ready(function()
 {
-	/* TODO floodding server */
-	/*
 	if (typeof instantsearch != 'undefined' && instantsearch)		
 		$("#search_query_" + blocksearch_type).keyup(function(){
 			if($(this).val().length > 4){
@@ -68,15 +66,16 @@ $(document).ready(function()
 			else
 				tryToCloseInstantSearch();
 		});
-	/*	*/
+
 	/* TODO Ids aa blocksearch_type need to be removed*/
+	var width_ac_results = 	$("#search_query_" + blocksearch_type).parent('form').width();
 	if (typeof ajaxsearch != 'undefined' && ajaxsearch && typeof blocksearch_type !== 'undefined' && blocksearch_type)
 		$("#search_query_" + blocksearch_type).autocomplete(
 			search_url,
 			{
 				minChars: 3,
 				max: 10,
-				width: 500,
+				width: (width_ac_results > 0 ? width_ac_results : 500),
 				selectFirst: false,
 				scroll: false,
 				dataType: "json",

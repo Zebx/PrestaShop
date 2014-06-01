@@ -44,21 +44,16 @@
 				{/if}
 			</span>
 			<span class="ajax_cart_no_product{if $cart_qties > 0} unvisible{/if}">{l s='(empty)' mod='blockcart'}</span>
+			{if $ajax_allowed && isset($blockcart_top) && !$blockcart_top}
+				<span class="block_cart_expand{if !isset($colapseExpandStatus) || (isset($colapseExpandStatus) && $colapseExpandStatus eq 'expanded')} unvisible{/if}">&nbsp;</span>
+				<span class="block_cart_collapse{if isset($colapseExpandStatus) && $colapseExpandStatus eq 'collapsed'} unvisible{/if}">&nbsp;</span>
+			{/if}
 		</a>
 		{if !$PS_CATALOG_MODE}
 			<div class="cart_block block exclusive">
-				{*<p class="title_block">
-					<a href="{$link->getPageLink("$order_process", true)|escape:'html':'UTF-8'}" title="{l s='View my shopping cart' mod='blockcart'}" rel="nofollow">
-						{l s='Cart' mod='blockcart'}
-						{if $ajax_allowed}
-							<span class="block_cart_expand"{if isset($colapseExpandStatus) && $colapseExpandStatus eq 'expanded' || !isset($colapseExpandStatus)} class="unvisible"{/if}>&nbsp;</span>
-							<span class="block_cart_collapse"{if isset($colapseExpandStatus) && $colapseExpandStatus eq 'collapsed'} class="unvisible"{/if}>&nbsp;</span>
-						{/if}
-					</a>
-				</p>*}
 				<div class="block_content">
 					<!-- block list of products -->
-					<div class="cart_block_list{if isset($colapseExpandStatus) && $colapseExpandStatus eq 'expanded' || !$ajax_allowed || !isset($colapseExpandStatus)} expanded{else} collapsed{/if}">
+					<div class="cart_block_list{if isset($blockcart_top) && !$blockcart_top}{if isset($colapseExpandStatus) && $colapseExpandStatus eq 'expanded' || !$ajax_allowed || !isset($colapseExpandStatus)} expanded{else} collapsed unvisible{/if}{/if}">
 						{if $products}
 							<dl class="products">
 								{foreach from=$products item='product' name='myLoop'}
@@ -68,7 +63,7 @@
 										<a class="cart-images" href="{$link->getProductLink($product.id_product, $product.link_rewrite, $product.category)|escape:'html':'UTF-8'}" title="{$product.name|escape:'html':'UTF-8'}"><img src="{$link->getImageLink($product.link_rewrite, $product.id_image, 'cart_default')}" alt="{$product.name|escape:'html':'UTF-8'}" /></a>
 										<div class="cart-info">
 											<div class="product-name">
-												<span class="quantity-formated"><span class="quantity">{$product.cart_quantity}</span>&nbsp;x&nbsp;</span><a class="cart_block_product_name" href="{$link->getProductLink($product, $product.link_rewrite, $product.category, null, null, $product.id_shop, $product.id_product_attribute)|escape:'html':'UTF-8'}" title="{$product.name|escape:'html':'UTF-8'}">{$product.name|truncate:100:'...'|escape:'html':'UTF-8'}</a>
+												<span class="quantity-formated"><span class="quantity">{$product.cart_quantity}</span>&nbsp;x&nbsp;</span><a class="cart_block_product_name" href="{$link->getProductLink($product, $product.link_rewrite, $product.category, null, null, $product.id_shop, $product.id_product_attribute)|escape:'html':'UTF-8'}" title="{$product.name|escape:'html':'UTF-8'}">{$product.name|truncate:13:'...'|escape:'html':'UTF-8'}</a>
 											</div>
 											{if isset($product.attributes_small)}
 												<div class="product-atributes">
@@ -127,7 +122,7 @@
 										<tr class="bloc_cart_voucher" data-id="bloc_cart_voucher_{$discount.id_discount}">
 											<td class="quantity">1x</td>
 											<td class="name" title="{$discount.description}">
-												{$discount.name|cat:' : '|cat:$discount.description|truncate:18:'...'|escape:'html':'UTF-8'}
+												{$discount.name|truncate:18:'...'|escape:'html':'UTF-8'}
 											</td>
 											<td class="price">
 												-{if $priceDisplay == 1}{convertPrice price=$discount.value_tax_exc}{else}{convertPrice price=$discount.value_real}{/if}
@@ -180,26 +175,18 @@
 								<span class="price cart_block_total ajax_block_cart_total">{$total}</span>
 								<span>{l s='Total' mod='blockcart'}</span>
 							</div>
-						</div>
-						{if $use_taxes && $display_tax_label == 1 && $show_tax}
-							{if $priceDisplay == 0}
+							{if $use_taxes && $display_tax_label == 1 && $show_tax}
 								<p>
+								{if $priceDisplay == 0}
 									{l s='Prices are tax included' mod='blockcart'}
-								</p>
-							{/if}
-							{if $priceDisplay == 1}
-								<p>
+								{elseif $priceDisplay == 1}
 									{l s='Prices are tax excluded' mod='blockcart'}
+								{/if}
 								</p>
 							{/if}
-						{/if}
+						</div>
 						<p class="cart-buttons">
-							<a 
-							id="button_order_cart" 
-							class="btn btn-default button button-small" 
-							href='{$link->getPageLink("$order_process", true)|escape:"html":"UTF-8"}' 
-							title="{l s='Check out' mod='blockcart'}" 
-							rel="nofollow">
+							<a id="button_order_cart" class="btn btn-default button button-small" href="{$link->getPageLink("$order_process", true)|escape:"html":"UTF-8"}" title="{l s='Check out' mod='blockcart'}" rel="nofollow">
 								<span>
 									{l s='Check out' mod='blockcart'}<i class="icon-chevron-right right"></i>
 								</span>
@@ -327,11 +314,7 @@
 							<i class="icon-chevron-left left"></i>{l s='Continue shopping' mod='blockcart'}
 						</span>
 					</span>
-					<a 
-					class="btn btn-default button button-medium" 
-					href='{$link->getPageLink("$order_process", true)|escape:"html":"UTF-8"}' 
-					title="{l s='Proceed to checkout' mod='blockcart'}" 
-					rel="nofollow">
+					<a class="btn btn-default button button-medium"	href="{$link->getPageLink("$order_process", true)|escape:"html":"UTF-8"}" title="{l s='Proceed to checkout' mod='blockcart'}" rel="nofollow">
 						<span>
 							{l s='Proceed to checkout' mod='blockcart'}<i class="icon-chevron-right right"></i>
 						</span>
@@ -347,6 +330,7 @@
 {addJsDef CUSTOMIZE_TEXTFIELD=$CUSTOMIZE_TEXTFIELD}
 {addJsDef img_dir=$img_dir|addslashes}
 {addJsDef generated_date=$smarty.now|intval}
+{addJsDef ajax_allowed=$ajax_allowed|boolval}
 
 {addJsDefL name=customizationIdMessage}{l s='Customization #' mod='blockcart' js=1}{/addJsDefL}
 {addJsDefL name=removingLinkText}{l s='remove this product from my cart' mod='blockcart' js=1}{/addJsDefL}

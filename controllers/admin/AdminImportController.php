@@ -243,8 +243,8 @@ class AdminImportControllerCore extends AdminController
 					'minimal_quantity' => array('label' => $this->l('Minimal quantity')),
 					'visibility' => array('label' => $this->l('Visibility')),
 					'additional_shipping_cost' => array('label' => $this->l('Additional shipping cost')),
-					'unity' => array('label' => $this->l('Unity')),
-					'unit_price_ratio' => array('label' => $this->l('Unit price ratio')),
+					'unity' => array('label' => $this->l('Unit for the unit price')),
+					'unit_price' => array('label' => $this->l('Unit price')),
 					'description_short' => array('label' => $this->l('Short description')),
 					'description' => array('label' => $this->l('Description')),
 					'tags' => array('label' => $this->l('Tags (x,y,z...)')),
@@ -262,7 +262,7 @@ class AdminImportControllerCore extends AdminController
 					'delete_existing_images' => array(
 						'label' => $this->l('Delete existing images (0 = No, 1 = Yes)')
 					),
-					'features' => array('label' => $this->l('Feature(Name:Value:Position:Customized)')),
+					'features' => array('label' => $this->l('Feature (Name:Value:Position:Customized)')),
 					'online_only' => array('label' => $this->l('Available online only (0 = No, 1 = Yes)')),
 					'condition' => array('label' => $this->l('Condition')),
 					'customizable' => array('label' => $this->l('Customizable (0 = No, 1 = Yes)')),
@@ -297,7 +297,7 @@ class AdminImportControllerCore extends AdminController
 					'weight' => 0.000000,
 					'visibility' => 'both',
 					'additional_shipping_cost' => 0.00,
-					'unit_price_ratio' => 0.000000,
+					'unit_price' => 0,
 					'quantity' => 0,
 					'minimal_quantity' => 1,
 					'price' => 0,
@@ -529,7 +529,7 @@ class AdminImportControllerCore extends AdminController
 	public function renderForm()
 	{
 		if (!is_dir(AdminImportController::getPath()))
-			return !($this->errors[] = Tools::displayError('The import directory does not extist.'));
+			return !($this->errors[] = Tools::displayError('The import directory does not exist.'));
 
 		if (!is_writable(AdminImportController::getPath()))
 			$this->displayWarning($this->l('The import directory must be writable (CHMOD 755 / 777).'));
@@ -602,7 +602,7 @@ class AdminImportControllerCore extends AdminController
 
 		$this->tpl_form_vars = array(
 			'post_max_size' => (int)$bytes,
-			'module_confirmation' => (Tools::getValue('import')) && (isset($this->warnings) && !count($this->warnings)),
+			'module_confirmation' => Tools::isSubmit('import') && (isset($this->warnings) && !count($this->warnings)),
 			'path_import' => AdminImportController::getPath(),
 			'entities' => $this->entities,
 			'entity_selected' => $entity_selected,
@@ -926,9 +926,6 @@ class AdminImportControllerCore extends AdminController
 		if (is_array(self::$column_mask))
 			foreach (self::$column_mask as $type => $nb)
 				$res[$type] = isset($row[$nb]) ? $row[$nb] : null;
-
-		if (Tools::getValue('forceIds')) // if you choose to force table before import the column id is removed from the CSV file.
-			unset($res['id']);
 
 		return $res;
 	}
@@ -1698,7 +1695,7 @@ class AdminImportControllerCore extends AdminController
 							$error = true;
 
 						if ($error)
-							$this->warnings[] = sprintf(Tools::displayError('Product n°%1$d: the picture cannot be saved: %2$s'), $image->id_product, $url);
+							$this->warnings[] = sprintf(Tools::displayError('Product #%1$d: the picture (%2$s) cannot be saved.'), $image->id_product, $url);
 					}
 				}
 				if (isset($product->id_category))
@@ -1719,7 +1716,7 @@ class AdminImportControllerCore extends AdminController
 						$tab_feature = explode(':', $single_feature);
 						$feature_name = isset($tab_feature[0]) ? trim($tab_feature[0]) : '';
 						$feature_value = isset($tab_feature[1]) ? trim($tab_feature[1]) : '';
-						$position = isset($tab_feature[2]) ? (int)$tab_feature[2] : false;
+						$position = isset($tab_feature[2]) ? (int)$tab_feature[2] - 1 : false;
 						$custom = isset($tab_feature[3]) ? (int)$tab_feature[3] : false;
 						if(!empty($feature_name) && !empty($feature_value))
 						{
@@ -1733,63 +1730,84 @@ class AdminImportControllerCore extends AdminController
 					}
 				// clean feature positions to avoid conflict
 				Feature::cleanPositions();
-			}
 
-			// set advanced stock managment
-			if (isset($product->advanced_stock_management))
-			{
-				if ($product->advanced_stock_management != 1 && $product->advanced_stock_management != 0)
-					$this->warnings[] = sprintf(Tools::displayError('Advanced stock management has incorrect value. Not set for product %1$s '),$product->name[$default_language_id]);
-				elseif (!Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT') && $product->advanced_stock_management == 1)
-					$this->warnings[] = sprintf(Tools::displayError('Advanced stock management is not enabled, can not enable on product %1$s '),$product->name[$default_language_id]);
-				else
-					$product->setAdvancedStockManagement($product->advanced_stock_management);
-				// automaticly disable depends on stock, if a_s_m set to disabled
-				if (StockAvailable::dependsOnStock($product->id) == 1 && $product->advanced_stock_management == 0)
-					StockAvailable::setProductDependsOnStock($product->id, 0);
-			}
-
-			// Check if warehouse exists
-			if (isset($product->warehouse) && $product->warehouse)
-			{
-				if (!Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT'))
-					$this->warnings[] = sprintf(Tools::displayError('Advanced stock management is not enabled, warehouse not set on product %1$s '),$product->name[$default_language_id]);
-				else
+				// set advanced stock managment
+				if (isset($product->advanced_stock_management))
 				{
-					if (Warehouse::exists($product->warehouse))
-					{
-						// Get already associated warehouses
-						$associated_warehouses_collection = WarehouseProductLocation::getCollection($product->id);
-						// Delete any entry in warehouse for this product
-						foreach ($associated_warehouses_collection as $awc)
-							$awc->delete();
-						$warehouse_location_entity = new WarehouseProductLocation();
-						$warehouse_location_entity->id_product = $product->id;
-						$warehouse_location_entity->id_product_attribute =  0;
-						$warehouse_location_entity->id_warehouse = $product->warehouse;
-							if (WarehouseProductLocation::getProductLocation($product->id, 0, $product->warehouse) !== false)
-								$warehouse_location_entity->update();
-							else
-								$warehouse_location_entity->save();
-						StockAvailable::synchronize($product->id);
-					}
+					if ($product->advanced_stock_management != 1 && $product->advanced_stock_management != 0)
+						$this->warnings[] = sprintf(Tools::displayError('Advanced stock management has incorrect value. Not set for product %1$s '),$product->name[$default_language_id]);
+					elseif (!Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT') && $product->advanced_stock_management == 1)
+						$this->warnings[] = sprintf(Tools::displayError('Advanced stock management is not enabled, can not enable on product %1$s '),$product->name[$default_language_id]);
 					else
-						$this->warnings[] = sprintf(Tools::displayError('Warehouse did not exist, can not set on product %1$s.'),$product->name[$default_language_id]);
+						$product->setAdvancedStockManagement($product->advanced_stock_management);
+					// automaticly disable depends on stock, if a_s_m set to disabled
+					if (StockAvailable::dependsOnStock($product->id) == 1 && $product->advanced_stock_management == 0)
+						StockAvailable::setProductDependsOnStock($product->id, 0);
 				}
-			}
 
-			// stock available
-			if (isset($product->depends_on_stock))
-			{
-				if ($product->depends_on_stock != 0 && $product->depends_on_stock != 1)
-					$this->warnings[] = sprintf(Tools::displayError('Incorrect value for "depends on stock" for product %1$s '),$product->name[$default_language_id]);
-				elseif ((!$product->advanced_stock_management || $product->advanced_stock_management == 0) && $product->depends_on_stock == 1)
-					$this->warnings[] = sprintf(Tools::displayError('Advanced stock management not enabled, can not set "depends on stock" for product %1$s '),$product->name[$default_language_id]);
-				else
-					StockAvailable::setProductDependsOnStock($product->id, $product->depends_on_stock);
-
-				// This code allows us to set qty and disable depends on stock
-				if (isset($product->quantity) && $product->depends_on_stock == 0)
+				// Check if warehouse exists
+				if (isset($product->warehouse) && $product->warehouse)
+				{
+					if (!Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT'))
+						$this->warnings[] = sprintf(Tools::displayError('Advanced stock management is not enabled, warehouse not set on product %1$s '),$product->name[$default_language_id]);
+					else
+					{
+						if (Warehouse::exists($product->warehouse))
+						{
+							// Get already associated warehouses
+							$associated_warehouses_collection = WarehouseProductLocation::getCollection($product->id);
+							// Delete any entry in warehouse for this product
+							foreach ($associated_warehouses_collection as $awc)
+								$awc->delete();
+							$warehouse_location_entity = new WarehouseProductLocation();
+							$warehouse_location_entity->id_product = $product->id;
+							$warehouse_location_entity->id_product_attribute =  0;
+							$warehouse_location_entity->id_warehouse = $product->warehouse;
+								if (WarehouseProductLocation::getProductLocation($product->id, 0, $product->warehouse) !== false)
+									$warehouse_location_entity->update();
+								else
+									$warehouse_location_entity->save();
+							StockAvailable::synchronize($product->id);
+						}
+						else
+							$this->warnings[] = sprintf(Tools::displayError('Warehouse did not exist, can not set on product %1$s.'),$product->name[$default_language_id]);
+					}
+				}
+	
+				// stock available
+				if (isset($product->depends_on_stock))
+				{
+					if ($product->depends_on_stock != 0 && $product->depends_on_stock != 1)
+						$this->warnings[] = sprintf(Tools::displayError('Incorrect value for "depends on stock" for product %1$s '),$product->name[$default_language_id]);
+					elseif ((!$product->advanced_stock_management || $product->advanced_stock_management == 0) && $product->depends_on_stock == 1)
+						$this->warnings[] = sprintf(Tools::displayError('Advanced stock management not enabled, can not set "depends on stock" for product %1$s '),$product->name[$default_language_id]);
+					else
+						StockAvailable::setProductDependsOnStock($product->id, $product->depends_on_stock);
+	
+					// This code allows us to set qty and disable depends on stock
+					if (isset($product->quantity) && $product->depends_on_stock == 0)
+					{
+						if (Shop::isFeatureActive())
+							foreach ($shops as $shop)
+								StockAvailable::setQuantity((int)$product->id, 0, $product->quantity, (int)$shop);
+						else
+							StockAvailable::setQuantity((int)$product->id, 0, $product->quantity, $this->context->shop->id);
+					}
+					// elseif enable depends on stock and quantity, add quantity to stock
+					elseif (isset($product->quantity) && $product->depends_on_stock == 1)
+					{
+						// add stock
+						$stock_manager = StockManagerFactory::getManager();
+						$price = str_replace(',', '.', $product->wholesale_price);
+						if ($price == 0)
+							$price = 0.000001;
+						$price = round(floatval($price), 6);
+						$warehouse = new Warehouse($product->warehouse);
+						if ($stock_manager->addProduct((int)$product->id, 0, $warehouse, $product->quantity, 1, $price, true))
+							StockAvailable::synchronize((int)$product->id);
+					}
+				}
+				else // if not depends_on_stock set, use normal qty
 				{
 					if (Shop::isFeatureActive())
 						foreach ($shops as $shop)
@@ -1797,28 +1815,6 @@ class AdminImportControllerCore extends AdminController
 					else
 						StockAvailable::setQuantity((int)$product->id, 0, $product->quantity, $this->context->shop->id);
 				}
-				// elseif enable depends on stock and quantity, add quantity to stock
-				elseif (isset($product->quantity) && $product->depends_on_stock == 1)
-				{
-					// add stock
-					$stock_manager = StockManagerFactory::getManager();
-					$price = str_replace(',', '.', $product->wholesale_price);
-					if ($price == 0)
-						$price = 0.000001;
-					$price = round(floatval($price), 6);
-					$warehouse = new Warehouse($product->warehouse);
-					if ($stock_manager->addProduct((int)$product->id, 0, $warehouse, $product->quantity, 1, $price, true))
-						StockAvailable::synchronize((int)$product->id);
-				}
-			}
-			// if not depends_on_stock set, use normal qty
-			else
-			{
-				if (Shop::isFeatureActive())
-					foreach ($shops as $shop)
-						StockAvailable::setQuantity((int)$product->id, 0, $product->quantity, (int)$shop);
-				else
-					StockAvailable::setQuantity((int)$product->id, 0, $product->quantity, $this->context->shop->id);
 			}
 		}
 		$this->closeCsvFile($handle);
@@ -2162,9 +2158,9 @@ class AdminImportControllerCore extends AdminController
 				if (isset($info['advanced_stock_management']))
 				{
 					if ($info['advanced_stock_management'] != 1 && $info['advanced_stock_management'] != 0)
-						$this->warnings[] = sprintf(Tools::displayError('Advanced stock management has incorrect value. Not set for product with id %s '),$product->id);
+						$this->warnings[] = sprintf(Tools::displayError('Advanced stock management has incorrect value. Not set for product with id %s.'),$product->id);
 					elseif (!Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT') && $info['advanced_stock_management'] == 1)
-						$this->warnings[] = sprintf(Tools::displayError('Advanced stock management is not enabled, can not enable on product with id %s '),$product->id);
+						$this->warnings[] = sprintf(Tools::displayError('Advanced stock management is not enabled, can not enable on product with id %s.'),$product->id);
 					else
 						$product->setAdvancedStockManagement($info['advanced_stock_management']);
 					// automaticly disable depends on stock, if a_s_m set to disabled
@@ -2173,10 +2169,10 @@ class AdminImportControllerCore extends AdminController
 				}
 
 				// Check if warehouse exists
-				if ($info['warehouse'])
+				if (isset($info['warehouse']) && $info['warehouse'])
 				{
 					if (!Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT'))
-						$this->warnings[] = sprintf(Tools::displayError('Advanced stock management is not enabled, warehouse not set on product with id %s '),$product->id);
+						$this->warnings[] = sprintf(Tools::displayError('Advanced stock management is not enabled, warehouse is not set on product with id %s.'),$product->id);
 					else
 					{
 						if (Warehouse::exists($info['warehouse']))
@@ -2192,7 +2188,7 @@ class AdminImportControllerCore extends AdminController
 							StockAvailable::synchronize($product->id);
 						}
 						else
-							$this->warnings[] = sprintf(Tools::displayError('Warehouse did not exist, cannot set on product %1$s '),$product->name[$default_language_id]);
+							$this->warnings[] = sprintf(Tools::displayError('Warehouse did not exist, cannot set on product %1$s.'),$product->name[$default_language_id]);
 					}
 				}
 
@@ -2202,7 +2198,7 @@ class AdminImportControllerCore extends AdminController
 					if ($info['depends_on_stock'] != 0 && $info['depends_on_stock'] != 1)
 						$this->warnings[] = sprintf(Tools::displayError('Incorrect value for depends on stock for product %1$s '),$product->name[$default_language_id]);
 					elseif ((!$info['advanced_stock_management'] || $info['advanced_stock_management'] == 0) && $info['depends_on_stock'] == 1)
-						$this->warnings[] = sprintf(Tools::displayError('Advanced stock management not enabled, can not set depends on stock %1$s '),$product->name[$default_language_id]);
+						$this->warnings[] = sprintf(Tools::displayError('Advanced stock management is not enabled, cannot set depends on stock %1$s '),$product->name[$default_language_id]);
 					else
 						StockAvailable::setProductDependsOnStock($product->id, $info['depends_on_stock'],null,$id_product_attribute);
 
@@ -2526,7 +2522,7 @@ class AdminImportControllerCore extends AdminController
 
 					if (count($customer_list) == 0)
 						$this->errors[] = sprintf(
-							Tools::displayError('%1$s does not exist in database %2$s (ID: %3$s) cannot be saved'),
+							Tools::displayError('%1$s does not exist in database %2$s (ID: %3$s), and therefore cannot be saved.'),
 							Db::getInstance()->getMsgError(),
 							$address->customer_email,
 							(isset($info['id']) && !empty($info['id']))? $info['id'] : 'null'
@@ -2534,7 +2530,7 @@ class AdminImportControllerCore extends AdminController
 				}
 				else
 				{
-					$this->errors[] = sprintf(Tools::displayError('"%s": Is not a valid email address'), $address->customer_email);
+					$this->errors[] = sprintf(Tools::displayError('"%s" is not a valid email address.'), $address->customer_email);
 					continue;
 				}
 			}
@@ -2549,14 +2545,14 @@ class AdminImportControllerCore extends AdminController
 
 					if (count($customer_list) == 0)
 						$this->errors[] = sprintf(
-							Tools::displayError('%1$s does not exist in database %2$s (ID: %3$s) cannot be saved'),
+							Tools::displayError('%1$s does not exist in database %2$s (ID: %3$s), and therefore cannot be saved.'),
 							Db::getInstance()->getMsgError(),
 							$customer->email,
 							(int)$address->id_customer
 						);
 				}
 				else
-					$this->errors[] = sprintf(Tools::displayError('The customer ID n.%d does not exist in the database (ID: %d) cannot be saved'), $address->id_customer);
+					$this->errors[] = sprintf(Tools::displayError('The customer ID #%d does not exist in the database, and therefore cannot be saved.'), $address->id_customer);
 			}
 			else
 			{

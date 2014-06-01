@@ -37,14 +37,6 @@
 		</div>
 	{/if}
 	{$smarty.block.parent}
-	{if in_array($input.type, array('radio', 'switch')) && $input.name == 'smarty_cache'}
-		<div class="clearfix row-padding-top">
-			<a href="{$current}&amp;token={$token}&amp;empty_smarty_cache=1" class="btn btn-default">
-				<i class="icon-eraser"></i>
-				{l s='Clear cache'}
-			</a>
-		</div>
-	{/if}		
 {/block}
 
 {block name="description"}
@@ -215,8 +207,8 @@
 			$('#smarty_up').val(1);
 		});
 
-		$('input[name="combination"], input[name="feature"], input[name="group"]').change(function(){
-			$('#features_detachables_up').val('true');
+		$('input[name="combination"], input[name="feature"], input[name="customer_group"]').change(function(){
+			$('#features_detachables_up').val(1);
 		});
 
 		$('input[name="_MEDIA_SERVER_1_"], input[name="_MEDIA_SERVER_2_"], input[name="_MEDIA_SERVER_3_"]').change(function(){

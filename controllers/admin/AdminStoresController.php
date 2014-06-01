@@ -345,8 +345,8 @@ class AdminStoresControllerCore extends AdminController
 					$_POST[$kp] = trim($vp);
 
 			/* Rewrite latitude and longitude to 8 digits */
-			$_POST['latitude'] = number_format($_POST['latitude'], 8);
-			$_POST['longitude'] = number_format($_POST['longitude'], 8);
+			$_POST['latitude'] = number_format((float)$_POST['latitude'], 8);
+			$_POST['longitude'] = number_format((float)$_POST['longitude'], 8);
 
 			/* If the selected country does not contain states */
 			$id_state = (int)Tools::getValue('id_state');
@@ -534,7 +534,7 @@ class AdminStoresControllerCore extends AdminController
 						AND `id_state` = '.(int)Tools::getValue('PS_SHOP_STATE_ID');
 			$isStateOk = Db::getInstance()->getValue($sql);
 			if ($isStateOk != 1)
-				$this->errors[] = Tools::displayError('The state specified is not located in this country.');
+				$this->errors[] = Tools::displayError('The specified state is not located in this country.');
 		}
 	}
 

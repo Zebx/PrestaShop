@@ -51,7 +51,6 @@ class AdminLoginControllerCore extends AdminController
 		$this->addCSS(__PS_BASE_URI__.$this->admin_webpath.'/themes/'.$this->bo_theme.'/css/admin-theme.css');
 		$this->addJS(_PS_JS_DIR_.'vendor/spin.js');
 		$this->addJS(_PS_JS_DIR_.'vendor/ladda.js');
-		$this->addJS(_PS_JS_DIR_.'login.js');
 	}
 	
 	public function initContent()
@@ -111,6 +110,11 @@ class AdminLoginControllerCore extends AdminController
 				'shop_name' => Tools::safeOutput(Configuration::get('PS_SHOP_NAME')),
 				'disableDefaultErrorOutPut' => true,
 			));
+
+		if ($email = Tools::getValue('email'))
+			$this->context->smarty->assign('email', $email);
+		if ($password = Tools::getValue('password'))
+			$this->context->smarty->assign('password', $password);
 
 		$this->setMedia();
 		$this->initHeader();
@@ -243,6 +247,8 @@ class AdminLoginControllerCore extends AdminController
 			if (Mail::Send($employee->id_lang, 'password', Mail::l('Your new password', $employee->id_lang), $params, $employee->email, $employee->firstname.' '.$employee->lastname))
 			{
 				// Update employee only if the mail can be sent
+				Shop::setContext(Shop::CONTEXT_SHOP, (int)min($employee->getAssociatedShops()));
+
 				$result = $employee->update();
 				if (!$result)
 					$this->errors[] = Tools::displayError('An error occurred while attempting to change your password.');

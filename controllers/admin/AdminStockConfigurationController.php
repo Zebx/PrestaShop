@@ -50,7 +50,7 @@ class AdminStockConfigurationControllerCore extends AdminController
 				'class' => 'fixed-width-xs'
 			),
 			'sign' => array(
-				'title' => $this->l('Sign'),
+				'title' => $this->l('Action'),
 				'align' => 'center',
 				'type' => 'select',
 				'filter_key' => 'a!sign',
@@ -125,7 +125,7 @@ class AdminStockConfigurationControllerCore extends AdminController
 
 	public function init()
 	{
-		// if we are managing the second list (i.e. supply order state)
+		// if we are managing the second list (i.e. supply order status)
 		if (Tools::isSubmit('submitAddsupply_order_state') ||
 			Tools::isSubmit('addsupply_order_state') ||
 			Tools::isSubmit('updatesupply_order_state') ||
@@ -185,7 +185,7 @@ class AdminStockConfigurationControllerCore extends AdminController
 							'id' => 'id',
 							'name' => 'name'
 						),
-						'hint' => $this->l('Select the corresponding action: Increase or decrease stock?')
+						'desc' => $this->l('Does this label indicate a stock increase or a stock decrease?')
 					),
 				),
 				'submit' => array(
@@ -193,7 +193,7 @@ class AdminStockConfigurationControllerCore extends AdminController
 				)
 			);
 		}
-		// else, if we are managing Supply Order State
+		// else, if we are managing Supply Order Status
 		else if (Tools::isSubmit('addsupply_order_state') ||
 				 Tools::isSubmit('updatesupply_order_state') ||
 				 Tools::isSubmit('submitAddsupply_order_state') ||
@@ -216,7 +216,7 @@ class AdminStockConfigurationControllerCore extends AdminController
 							'type' => 'color',
 							'label' => $this->l('Color'),
 							'name' => 'color',
-							'hint' => $this->l('Status vill be highlited in this color. HTML colors only.'),
+							'hint' => $this->l('Status will be highlighted in this color. HTML colors only.'),
 						),
 						array(
 							'type' => 'switch',
@@ -236,7 +236,7 @@ class AdminStockConfigurationControllerCore extends AdminController
 									'label' => $this->l('No')
 								)
 							),
-							'hint' => $this->l('Is it is possible to edit the order? Keep in mind that an editable order can not be sent to the supplier.')
+							'hint' => $this->l('Is it is possible to edit the order? Keep in mind that an editable order cannot be sent to the supplier.')
 						),
 						array(
 							'type' => 'switch',
@@ -260,7 +260,7 @@ class AdminStockConfigurationControllerCore extends AdminController
 						),
 						array(
 							'type' => 'switch',
-							'label' => $this->l('Delivery state'),
+							'label' => $this->l('Delivery status'),
 							'name' => 'receipt_state',
 							'required' => true,
 							'is_bool' => true,
@@ -276,11 +276,11 @@ class AdminStockConfigurationControllerCore extends AdminController
 									'label' => $this->l('No')
 								)
 							),
-							'hint' => $this->l('Define if products have been either partially or completely received. This will allow you to know if ordered products have to be added to the corresponding warehouse.'),
+							'hint' => $this->l('Indicates if products have been either partially or completely received. This will allow you to know if ordered products have to be added to the corresponding warehouse.'),
 						),
 						array(
 							'type' => 'switch',
-							'label' => $this->l('Pending receipt'),
+							'label' => $this->l('Awaiting delivery'),
 							'name' => 'pending_receipt',
 							'required' => true,
 							'is_bool' => true,
@@ -296,7 +296,7 @@ class AdminStockConfigurationControllerCore extends AdminController
 									'label' => $this->l('No')
 								)
 							),
-							'hint' => $this->l('The customer is awaiting delivery.')
+							'hint' => $this->l('Indicates that you are awaiting delivery of supplies.')
 						),
 					),
 					'submit' => array(
@@ -332,7 +332,7 @@ class AdminStockConfigurationControllerCore extends AdminController
 									'type' => 'color',
 									'label' => $this->l('Color'),
 									'name' => 'color',
-									'desc' => $this->l('Status vill be highlited in this color. HTML colors only.'),
+									'desc' => $this->l('Status will be highlighted in this color. HTML colors only.'),
 								),
 							),
 							'submit' => array(
@@ -430,7 +430,7 @@ class AdminStockConfigurationControllerCore extends AdminController
 				'color' => 'color',
 			),
 			'editable' => array(
-				'title' => $this->l('Editable?'),
+				'title' => $this->l('Supply order can be edited?'),
 				'align' => 'center',
 				'active' => 'editable',
 				'type' => 'bool',
@@ -439,7 +439,7 @@ class AdminStockConfigurationControllerCore extends AdminController
 				'ajax' => true
 			),
 			'delivery_note' => array(
-				'title' => $this->l('Is there a delivery note available?'),
+				'title' => $this->l('Delivery note is available?'),
 				'align' => 'center',
 				'active' => 'deliveryNote',
 				'type' => 'bool',
@@ -448,7 +448,7 @@ class AdminStockConfigurationControllerCore extends AdminController
 				'ajax' => true
 			),
 			'pending_receipt' => array(
-				'title' => $this->l('Is there a pending receipt?'),
+				'title' => $this->l('Delivery is expected?'),
 				'align' => 'center',
 				'active' => 'pendingReceipt',
 				'type' => 'bool',
@@ -457,7 +457,7 @@ class AdminStockConfigurationControllerCore extends AdminController
 				'ajax' => true
 			),
 			'receipt_state' => array(
-				'title' => $this->l('Delivery state?'),
+				'title' => $this->l('Stock has been delivered?'),
 				'align' => 'center',
 				'active' => 'receiptState',
 				'type' => 'bool',
@@ -466,7 +466,7 @@ class AdminStockConfigurationControllerCore extends AdminController
 				'ajax' => true
 			),
 			'enclosed' => array(
-				'title' => $this->l('Enclosed order state?'),
+				'title' => $this->l('Order is closed?'),
 				'align' => 'center',
 				'active' => 'enclosed',
 				'type' => 'bool',
@@ -534,7 +534,7 @@ class AdminStockConfigurationControllerCore extends AdminController
 	{
 		if (!Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT'))
 		{
-			$this->warnings[md5('PS_ADVANCED_STOCK_MANAGEMENT')] = $this->l('You need to activate advanced stock management before using this feature.');
+			$this->warnings[md5('PS_ADVANCED_STOCK_MANAGEMENT')] = $this->l('You need to activate the Advanced Stock Management feature before you can use this feature.');
 			return false;
 		}
 		parent::initContent();
@@ -544,7 +544,7 @@ class AdminStockConfigurationControllerCore extends AdminController
 	{
 		if (!Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT'))
 		{
-			$this->warnings[md5('PS_ADVANCED_STOCK_MANAGEMENT')] = $this->l('You need to activate advanced stock management before using this feature.');
+			$this->warnings[md5('PS_ADVANCED_STOCK_MANAGEMENT')] = $this->l('You need to activate the Advanced Stock Management feature before you can use this feature.');
 			return false;
 		}
 		parent::initProcess();	

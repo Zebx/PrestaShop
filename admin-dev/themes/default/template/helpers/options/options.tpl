@@ -27,6 +27,10 @@
 
 <script type="text/javascript">
 	id_language = Number({$current_id_lang});
+	{if isset($tabs) && $tabs|count}
+		var helper_tabs= {$tabs|json_encode};
+		var unique_field_id = '{$table}_';
+	{/if}
 </script>
 {block name="defaultOptions"}
 <form action="{$current}&amp;token={$token}"
@@ -37,10 +41,10 @@
 		{if isset($categoryData['top'])}{$categoryData['top']}{/if}
 		<div class="panel {if isset($categoryData['class'])}{$categoryData['class']}{/if}" id="{$table}_fieldset_{$category}">
 			{* Options category title *}
-			<h3>
+			<div class="panel-heading">
 				<i class="{if isset($categoryData['icon'])}{$categoryData['icon']}{else}icon-cogs{/if}"></i>
 				{if isset($categoryData['title'])}{$categoryData['title']}{else}{l s='Options'}{/if}
-			</h3>
+			</div>
 
 			{* Category description *}
 
@@ -81,11 +85,12 @@
 			</div>
 			{/if}
 
+			<div class="form-wrapper">
 			{foreach $categoryData['fields'] AS $key => $field}
 					{if $field['type'] == 'hidden'}
 						<input type="hidden" name="{$key}" value="{$field['value']}" />
 					{else}
-						<div class="form-group {if isset($field.form_group_class)} {$field.form_group_class} {/if}">
+						<div class="form-group {if isset($field.form_group_class)} {$field.form_group_class} {/if}" {if isset($tabs) && isset($field.tab)}data-tab-id="{$field.tab}"{/if}>
 							<div id="conf_id_{$key}" {if $field['is_invisible']} class="isInvisible"{/if}>								
 								{block name="label"}
 									{if isset($field['title']) && isset($field['hint'])}
@@ -116,7 +121,7 @@
 											{/if}
 											{$field['title']}
 										</label>
-									{/if}									
+									{/if}
 								{/block}
 								{block name="field"}
 
@@ -124,7 +129,7 @@
 									{if $field['type'] == 'select'}
 										<div class="col-lg-9">
 											{if $field['list']}
-												<select class="fixed-width-xxl" name="{$key}"{if isset($field['js'])} onchange="{$field['js']}"{/if} id="{$key}" {if isset($field['size'])} size="{$field['size']}"{/if}>
+												<select class="form-control fixed-width-xxl {if isset($field['class'])}{$field['class']}{/if}" name="{$key}"{if isset($field['js'])} onchange="{$field['js']}"{/if} id="{$key}" {if isset($field['size'])} size="{$field['size']}"{/if}>
 													{foreach $field['list'] AS $k => $option}
 														<option value="{$option[$field['identifier']]}"{if $field['value'] == $option[$field['identifier']]} selected="selected"{/if}>{$option['name']}</option>
 													{/foreach}
@@ -169,7 +174,7 @@
 										</div>
 									{elseif $field['type'] == 'text'}
 										<div class="col-lg-9">{if isset($field['suffix'])}<div class="input-group">{/if}
-											<input type="{$field['type']}"{if isset($field['id'])} id="{$field['id']}"{/if} size="{if isset($field['size'])}{$field['size']|intval}{else}5{/if}" name="{$key}" value="{$field['value']|escape:'html':'UTF-8'}" {if isset($field['autocomplete']) && !$field['autocomplete']}autocomplete="off"{/if}/>
+											<input class="form-control {if isset($field['class'])}{$field['class']}{/if}" type="{$field['type']}"{if isset($field['id'])} id="{$field['id']}"{/if} size="{if isset($field['size'])}{$field['size']|intval}{else}5{/if}" name="{$key}" value="{$field['value']|escape:'html':'UTF-8'}" {if isset($field['autocomplete']) && !$field['autocomplete']}autocomplete="off"{/if}/>
 											{if isset($field['suffix'])}
 											<span class="input-group-addon">
 												{$field['suffix']|strval}
@@ -322,6 +327,8 @@
 						</div>
 				{/if}
 			{/foreach}
+			</div><!-- /.form-wrapper -->
+
 			{if isset($categoryData['bottom'])}{$categoryData['bottom']}{/if}
 			{block name="footer"}
 				{if isset($categoryData['submit']) || isset($categoryData['buttons'])}

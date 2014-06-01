@@ -41,6 +41,7 @@
                     </a>
                 </li>
     			{if !$PS_CATALOG_MODE}
+    			{if $PS_DISPLAY_BEST_SELLERS}
         			<li>
                         <a 
                         href="{$link->getPageLink('best-sales')|escape:'html':'UTF-8'}" 
@@ -48,6 +49,7 @@
                             {l s='Best sellers'}
                         </a>
                     </li>
+                {/if}
         			<li>
                         <a 
                         href="{$link->getPageLink('prices-drop')|escape:'html':'UTF-8'}" 
@@ -149,8 +151,8 @@
                         <a 
                         href="{$link->getPageLink('index')}?mylogout" 
                         rel="nofollow"
-                        title="{l s='Log out'}" >
-                            {l s='Log out'}
+                        title="{l s='Sign out'}" >
+                            {l s='Sign out'}
                         </a>
                     </li>
         		{/if}

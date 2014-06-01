@@ -31,7 +31,7 @@
 	<div class="panel col-lg-12">
 		<form action="{$currentIndex}&amp;token={$token}" method="post" enctype="multipart/form-data" class="form-horizontal">
 			<h3>{l s='Add a new module'}</h3>
-			<p class="alert alert-info">{l s='The module must either be a zip file or a tarball.'}</p>
+			<p class="alert alert-info">{l s='The module must either be a Zip file (.zip) or a tarball file (.tar, .tar.gz, .tgz).'}</p>
 			<div class="form-group">
 				<label for="file" class="control-label col-lg-3">
 					<span class="label-tooltip" data-toggle="tooltip" title="{l s='Upload a module from your computer.'}">
@@ -89,10 +89,10 @@
 				<div class="list-group">
 					<form id="filternameForm" method="post" class="list-group-item form-horizontal">
 						<div class="input-group">
-							<input class="form-control" placeholder="{l s='Search'}" type="text" value="" name="moduleQuicksearch" id="moduleQuicksearch" autocomplete="off" />
-							<div class="input-group-addon">
+							<span class="input-group-addon">
 								<i class="icon-search"></i>
-							</div>
+							</span>
+							<input class="form-control" placeholder="{l s='Search'}" type="text" value="" name="moduleQuicksearch" id="moduleQuicksearch" autocomplete="off" />
 						</div>
 					</form>
 					<a class="categoryModuleFilterLink list-group-item {if isset($categoryFiltered.favorites)}active{/if}" href="{$currentIndex}&amp;token={$token}&amp;filterCategory=favorites" id="filter_favorite">
@@ -107,7 +107,6 @@
 						</a>
 					{/foreach}
 				</div>
-				{include file='controllers/modules/login_addons.tpl'}
 			</div>
 			<div id="moduleContainer" class="col-md-9">
 				{include file='controllers/modules/list.tpl'}

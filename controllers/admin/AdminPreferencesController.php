@@ -89,7 +89,7 @@ class AdminPreferencesControllerCore extends AdminController
 				),
 			);
 
-			if (Configuration::get('PS_SSL_ENABLED'))
+			if (Tools::getValue('PS_SSL_ENABLED', Configuration::get('PS_SSL_ENABLED')))
 				$fields['PS_SSL_ENABLED_EVERYWHERE'] = array(
 					'title' => $this->l('Force the SSL on all the pages'),
 					'desc' => $this->l('Force all your store to use SSL.'),
@@ -129,6 +129,13 @@ class AdminPreferencesControllerCore extends AdminController
 				'PS_DISPLAY_SUPPLIERS' => array(
 					'title' => $this->l('Display suppliers and manufacturers'),
 					'desc' => $this->l('Enable suppliers and manufacturers pages on your Front Office even when their respective modules are disabled.'),
+					'validation' => 'isBool',
+					'cast' => 'intval',
+					'type' => 'bool'
+				),
+				'PS_DISPLAY_BEST_SELLERS' => array(
+					'title' => $this->l('Display best sellers'),
+					'desc' => $this->l('Enable best sellers page on your Front Office even when it\'s respective module is disabled.'),
 					'validation' => 'isBool',
 					'cast' => 'intval',
 					'type' => 'bool'

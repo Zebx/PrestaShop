@@ -63,7 +63,7 @@
 				<div class="col-lg-4">
 					{* Choose number of results per page *}
 					<span class="pagination">
-						{l s='Display'}: 
+						{l s='Display'} 
 						<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
 							{$selected_pagination}
 							<i class="icon-caret-down"></i>
@@ -149,7 +149,7 @@
 				else
 					return true;
 			});
-			$('#select_submitBulk').change(function(){
+			$('#select_submitBulk').change(function() {
 				if ($(this).val() == 'affectzone')
 					loadZones();
 				else if (loaded)
@@ -171,7 +171,7 @@
 				cache: false,
 				dataType: 'json',
 				success: function(data) {
-					var html = $(data);
+					var html = $(data.data);
 					html.hide();
 					$('#select_submitBulk').after(html);
 					html.fadeIn('slow');

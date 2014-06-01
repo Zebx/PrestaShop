@@ -32,6 +32,10 @@ class ThemeCore extends ObjectModel
 	public $default_left_column;
 	public $default_right_column;
 	public $product_per_page;
+	
+	const CACHE_FILE_CUSTOMER_THEMES_LIST = '/config/xml/customer_themes_list.xml';
+	
+	const CACHE_FILE_MUST_HAVE_THEMES_LIST = '/config/xml/must_have_themes_list.xml';
 
 	/** @var int access rights of created folders (octal) */
 	public static $access_rights = 0775;
@@ -165,6 +169,16 @@ class ThemeCore extends ObjectModel
 			}
 			Db::getInstance()->insert('theme_meta', $values);
 		}
+	}
+
+	public function hasColumns($page)
+	{
+		return Db::getInstance()->getRow('
+		SELECT IFNULL(left_column, default_left_column) as left_column, IFNULL(right_column, default_right_column) as right_column
+		FROM '._DB_PREFIX_.'theme t
+		LEFT JOIN '._DB_PREFIX_.'theme_meta tm ON (t.id_theme = tm.id_theme)
+		LEFT JOIN '._DB_PREFIX_.'meta m ON (m.id_meta = tm.id_meta)
+		WHERE t.id_theme ='.(int)$this->id.' AND m.page = "'.pSQL($page).'"');
 	}
 
 	public function hasLeftColumn($page = null)

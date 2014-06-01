@@ -115,17 +115,19 @@ class AdminEmployeesControllerCore extends AdminController
 				'submit' => array('title' => $this->l('Save'))
 			)
 		);
-
+		$rtl = $this->context->language->is_rtl ? '_rtl' : '';
 		$path = _PS_ADMIN_DIR_.DIRECTORY_SEPARATOR.'themes'.DIRECTORY_SEPARATOR;
 		foreach (scandir($path) as $theme)
-			if ($theme[0] != '.' && is_dir($path.$theme) && (@filemtime($path.$theme.DIRECTORY_SEPARATOR.'css'
-				.DIRECTORY_SEPARATOR.'admin-theme.css')))
+			if ($theme[0] != '.' && is_dir($path.$theme) && (@filemtime($path.$theme.DIRECTORY_SEPARATOR.'css'.DIRECTORY_SEPARATOR.'admin-theme.css')))
 			{
-				$this->themes[] = array('id' => $theme.'|admin-theme.css', 'name' => $theme.' - admin-theme.css');
-				if (file_exists($path.$theme.DIRECTORY_SEPARATOR.'css'.DIRECTORY_SEPARATOR.'schemes'))
-					foreach (scandir($path.$theme.DIRECTORY_SEPARATOR.'css'.DIRECTORY_SEPARATOR.'schemes') as $css)
+				$this->themes[] = array('id' => $theme.'|admin-theme'.$rtl.'.css', 'name' => $this->l('Default'));
+				if (file_exists($path.$theme.DIRECTORY_SEPARATOR.'css'.DIRECTORY_SEPARATOR.'schemes'.$rtl))
+					foreach (scandir($path.$theme.DIRECTORY_SEPARATOR.'css'.DIRECTORY_SEPARATOR.'schemes'.$rtl) as $css)
 						if ($css[0] != '.' && preg_match('/\.css$/', $css))
-							$this->themes[] = array('id' => $theme.'|schemes/'.$css, 'name' => $theme.' - schemes/'.$css);
+						{
+							$name = (strpos($css,'admin-theme-') !== false ? Tools::ucfirst(preg_replace('/^admin-theme-(.*)\.css$/', '$1', $css)) : $css);
+							$this->themes[] = array('id' => $theme.'|schemes'.$rtl.'/'.$css, 'name' => $name);
+						}
 			}
 
 		$home_tab = Tab::getInstanceFromClassName('AdminDashboard', $this->context->language->id);
@@ -235,7 +237,8 @@ class AdminEmployeesControllerCore extends AdminController
 				),
 				array(
 					'type' => 'html',
-					'name' => '<div id="employee-thumbnail"><a href="http://www.prestashop.com/forums/index.php?app=core&module=usercp" target="_blank" style="background-image:url('.$obj->getImage().')"></a></div>
+					'name' => 'employee_avatar',
+					'html_content' => '<div id="employee-thumbnail"><a href="http://www.prestashop.com/forums/index.php?app=core&module=usercp" target="_blank" style="background-image:url('.$obj->getImage().')"></a></div>
 					<div class="alert alert-info">'.sprintf($this->l('Your avatar in PrestaShop 1.6.x is your profile picture on %1$s. To change your avatar, log in to PrestaShop.com with your email %2$s and follow the on-screen instructions.'), '<a href="http://www.prestashop.com/forums/index.php?app=core&module=usercp" class="alert-link" target="_blank">PrestaShop.com</a>', $obj->email).'</div>',
 				),
 				array(
@@ -249,6 +252,7 @@ class AdminEmployeesControllerCore extends AdminController
 				),
 			),
 		);
+
 		if ($this->restrict_edition)
 			$this->fields_form['input'][] = array(
 				'type' => 'change-password',
@@ -261,20 +265,13 @@ class AdminEmployeesControllerCore extends AdminController
 				'label' => $this->l('Password'),
 				'hint' => sprintf($this->l('Minimum of %s characters.'), Validate::ADMIN_PASSWORD_LENGTH),
 				'name' => 'passwd'
-				);
+				);	
+		$this->fields_form['input'][] = array(
+			'type' => 'prestashop_addons',
+			'label' => 'PrestaShop Addons',
+			'name' => 'prestashop_addons',
+		);
 
-
-		// if ($this->restrict_edition)
-		// 	$this->fields_form['input'][] = array(
-		// 		'type' => 'password',
-		// 		'label' => $this->l('Current password'),
-		// 		'name' => 'old_passwd',
-		// 		'hint' => $this->l('Leave this field blank if you do not want to change your password.'),
-		// 		//'hint' => sprintf($this->l('Minimum of %s characters.'), Validate::ADMIN_PASSWORD_LENGTH)
-		// 		);
-			
-			
-						
 		$this->fields_form['input'] = array_merge($this->fields_form['input'], array(
 			array(
 				'type' => 'switch',
@@ -584,7 +581,7 @@ class AdminEmployeesControllerCore extends AdminController
 	public function postProcess()
 	{
 		/* PrestaShop demo mode */
-		if ((Tools::isSubmit('deleteemployee') || Tools::isSubmit('status') || Tools::isSubmit('statusemployee') || Tools::isSubmit('submitAddemployee')) && _PS_MODE_DEMO_)
+		if ((Tools::isSubmit('submitBulkdeleteemployee') || Tools::isSubmit('submitBulkdisableSelectionemployee') || Tools::isSubmit('deleteemployee') || Tools::isSubmit('status') || Tools::isSubmit('statusemployee') || Tools::isSubmit('submitAddemployee')) && _PS_MODE_DEMO_)
 		{
 				$this->errors[] = Tools::displayError('This functionality has been disabled.');
 				return;

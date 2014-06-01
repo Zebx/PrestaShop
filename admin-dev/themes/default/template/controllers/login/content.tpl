@@ -23,10 +23,8 @@
 *  International Registered Trademark & Property of PrestaShop SA
 *}
 <script type="text/javascript">
-	var there_are = '{l s='There are'}';
-	var there_is = '{l s='There is'}';
-	var label_errors = '{l s='errors'}';
-	var label_error = '{l s='error'}';
+	var one_error = '{l s='There is one error.'}';
+	var more_errors = '{l s='There are several errors.'}';
 </script>
 <div id="login-panel">
 	<div id="login-header">
@@ -40,9 +38,10 @@
 		<div id="error" class="hide alert alert-danger">
 		{if isset($errors)}
 			<h4>
-				{if $nbErrors > 1}
+				{if isset($nbErrors) && $nbErrors > 1}
 					{l s='There are %d errors.' sprintf=$nbErrors}
-				{else}{l s='There is %d error.' sprintf=$nbErrors}
+				{else}
+					{l s='There is %d error.' sprintf=$nbErrors}
 				{/if}
 			</h4>
 			<ol>
@@ -75,7 +74,7 @@
 						</label>
 						<div class="input-group">
 							<span class="input-group-addon"><i class="icon-key"></i></span>
-							<input name="passwd" type="password" id="passwd" class="form-control" value="{if isset($password)}{$password}{/if}" tabindex="2" placeholder="{l s='Password'}" />
+							<input name="passwd" type="password" id="passwd" class="form-control" value="{if isset($password)}{$password|escape:'html':'UTF-8'}{/if}" tabindex="2" placeholder="{l s='Password'}" />
 						</div>
 					</div>
 					<div class="form-group clearfix">
@@ -93,7 +92,7 @@
 						<button name="submitLogin" type="submit" tabindex="4" class="btn btn-default btn-lg btn-block ladda-button" data-style="slide-up" data-spinner-color="black" >
 							<span class="ladda-label">
 								<i class="icon-check text-success"></i>
-								{l s='Log in'}
+								{l s='Sign in'}
 							</span>
 						</button>
 					</div>
@@ -170,4 +169,3 @@
 		</p>
 	</div>
 </div>
-	

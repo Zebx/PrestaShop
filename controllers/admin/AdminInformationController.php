@@ -70,8 +70,8 @@ class AdminInformationControllerCore extends AdminController
 			'apache_instaweb' => Tools::apacheModExists('mod_instaweb'),
 			'shop' => array(
 				'ps' => _PS_VERSION_,
-				'url' => Tools::getHttpHost(true).__PS_BASE_URI__,
-				'theme' => _THEME_NAME_,
+				'url' => $this->context->shop->getBaseURL(),
+				'theme' => $this->context->shop->theme_name,
 			),
 			'mail' => Configuration::get('PS_MAIL_METHOD') == 1,
 			'smtp' => array(
@@ -108,7 +108,7 @@ class AdminInformationControllerCore extends AdminController
 			'log_dir' => $this->l('Set write permissions for the "log" folder and subfolders.'),
 			'mails_dir' => $this->l('Set write permissions for the "mails" folder and subfolders.'),
 			'module_dir' => $this->l('Set write permissions for the "modules" folder and subfolders.'),
-			'theme_lang_dir' => $this->l('Set the write permissions for the "themes')._THEME_NAME_.$this->l('/lang/" folder and subfolders, recursively.'),
+			'theme_lang_dir' => sprintf($this->l('Set the write permissions for the "themes%s/lang/" folder and subfolders, recursively.'), _THEME_NAME_),
 			'translations_dir' => $this->l('Set write permissions for the "translations" folder and subfolders.'),
 			'customizable_products_dir' => $this->l('Set write permissions for the "upload" folder and subfolders.'),
 			'virtual_products_dir' => $this->l('Set write permissions for the "download" folder and subfolders.'),
@@ -152,7 +152,7 @@ class AdminInformationControllerCore extends AdminController
 
 	public function getListOfUpdatedFiles(SimpleXMLElement $dir, $path = '')
 	{
-		$exclude_regexp = '(install(-dev|-new)?|themes|tools|cache|docs|download|img|localization|log|mails|translations|upload)';
+		$exclude_regexp = '(install(-dev|-new)?|themes|tools|cache|docs|download|img|localization|log|mails|translations|upload|modules|override/(:?.*)index.php$)';
 		$admin_dir = basename(_PS_ADMIN_DIR_);
 
 		foreach ($dir->md5file as $file)

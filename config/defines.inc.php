@@ -51,13 +51,24 @@ if (!defined('PHP_VERSION_ID'))
     define('PHP_VERSION_ID', ($version[0] * 10000 + $version[1] * 100 + $version[2]));
 }
 
+if (!defined('_PS_VERSION_') && (getenv('_PS_VERSION_') || getenv('REDIRECT__PS_VERSION_')))
+	define('_PS_VERSION_', getenv('_PS_VERSION_') ? getenv('_PS_VERSION_') : getenv('REDIRECT__PS_VERSION_'));
+
+if (!defined('_PS_HOST_MODE_') && (getenv('_PS_HOST_MODE_') || getenv('REDIRECT__PS_HOST_MODE_')))
+	define('_PS_HOST_MODE_', getenv('_PS_HOST_MODE_') ? getenv('_PS_HOST_MODE_') : getenv('REDIRECT__PS_HOST_MODE_'));
+
+if (!defined('_PS_ROOT_DIR_') && (getenv('_PS_ROOT_DIR_') || getenv('REDIRECT__PS_ROOT_DIR_')))
+	define('_PS_ROOT_DIR_', getenv('_PS_ROOT_DIR_') ? getenv('_PS_ROOT_DIR_') : getenv('REDIRECT__PS_ROOT_DIR_'));
+
 /* Directories */
 if (!defined('_PS_ROOT_DIR_'))
 {
 	define('_PS_ROOT_DIR_', realpath($currentDir.'/..'));
-	define('_PS_CORE_DIR_', _PS_ROOT_DIR_);
+
+	if (!defined('_PS_CORE_DIR_'))
+		define('_PS_CORE_DIR_', _PS_ROOT_DIR_);
 }
-else
+elseif (!defined('_PS_CORE_DIR_'))
 	define('_PS_CORE_DIR_', realpath($currentDir.'/..'));
 
 define('_PS_ALL_THEMES_DIR_',        _PS_ROOT_DIR_.'/themes/');
@@ -71,7 +82,8 @@ define('_PS_DOWNLOAD_DIR_',          _PS_ROOT_DIR_.'/download/');
 define('_PS_MAIL_DIR_',              _PS_CORE_DIR_.'/mails/');
 if (!defined('_PS_MODULE_DIR_'))
 	define('_PS_MODULE_DIR_',        _PS_ROOT_DIR_.'/modules/');
-define('_PS_OVERRIDE_DIR_',          _PS_ROOT_DIR_.'/override/');
+if (!defined('_PS_OVERRIDE_DIR_'))
+    define('_PS_OVERRIDE_DIR_',          _PS_ROOT_DIR_.'/override/');
 define('_PS_PDF_DIR_',               _PS_CORE_DIR_.'/pdf/');
 define('_PS_TRANSLATIONS_DIR_',      _PS_ROOT_DIR_.'/translations/');
 define('_PS_UPLOAD_DIR_',			 _PS_ROOT_DIR_.'/upload/');
@@ -117,8 +129,8 @@ if (!defined('_PS_MAGIC_QUOTES_GPC_'))
 
 define('_CAN_LOAD_FILES_', 1);
 
-/* Order states
-Order states has been moved in config.inc.php file for backward compatibility reasons */
+/* Order statuses
+Order statuses have been moved into config.inc.php file for backward compatibility reasons */
 
 /* Tax behavior */
 define('PS_PRODUCT_TAX', 0);
@@ -181,4 +193,3 @@ define('_PS_SMARTY_CONSOLE_OPEN_BY_URL_', 1);
 define('_PS_SMARTY_CONSOLE_OPEN_', 2);
 
 define('_PS_JQUERY_VERSION_', '1.11.0');
-

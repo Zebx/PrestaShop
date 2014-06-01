@@ -549,7 +549,7 @@ class OrderOpcControllerCore extends ParentOrderController
 
 		/* Bypass payment step if total is 0 */
 		if ($this->context->cart->getOrderTotal() <= 0)
-			return '<p class="center"><input type="button" class="exclusive_large" name="confirmOrder" id="confirmOrder" value="'.Tools::displayError('I confirm my order.').'" onclick="confirmFreeOrder();" /></p>';
+			return '<p class="center"><button class="button btn btn-default button-medium" name="confirmOrder" id="confirmOrder" onclick="confirmFreeOrder();" type="submit"> <span>'.Tools::displayError('I confirm my order.').'</span></button></p>';
 
 		$return = Hook::exec('displayPayment');
 		if (!$return)
@@ -562,7 +562,7 @@ class OrderOpcControllerCore extends ParentOrderController
 		$address_delivery = new Address($this->context->cart->id_address_delivery);
 		
 		$cms = new CMS(Configuration::get('PS_CONDITIONS_CMS_ID'), $this->context->language->id);
-		$link_conditions = $this->context->link->getCMSLink($cms, $cms->link_rewrite);
+		$link_conditions = $this->context->link->getCMSLink($cms, $cms->link_rewrite, Configuration::get('PS_SSL_ENABLED'));
 		if (!strpos($link_conditions, '?'))
 			$link_conditions .= '?content_only=1';
 		else

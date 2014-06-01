@@ -57,7 +57,7 @@ class AdminInvoicesControllerCore extends AdminController
 					),
 					'PS_INVOICE_START_NUMBER' => array(
 						'title' => $this->l('Invoice number'),
-						'desc' => $this->l('The next invoice will begin with this number, and then increase with each additional invoice. Set to 0 if you want to keep the current number.').(Order::getLastInvoiceNumber() + 1).').',
+						'desc' => sprintf($this->l('The next invoice will begin with this number, and then increase with each additional invoice. Set to 0 if you want to keep the current number (which is #%s).'), Order::getLastInvoiceNumber() + 1),
 						'size' => 6,
 						'type' => 'text',
 						'cast' => 'intval'
@@ -164,6 +164,7 @@ class AdminInvoicesControllerCore extends AdminController
 			FROM `'._DB_PREFIX_.'order_invoice` oi
 			LEFT JOIN `'._DB_PREFIX_.'orders` o ON  oi.id_order = o.id_order 
 			WHERE o.id_shop IN('.implode(', ', Shop::getContextListShopID()).')
+			AND oi.number > 0
 			GROUP BY o.current_state
 		 ');
 

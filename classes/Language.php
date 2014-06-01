@@ -96,6 +96,7 @@ class LanguageCore extends ObjectModel
 	 */
 	public function getFields()
 	{
+		$this->iso_code = strtolower($this->iso_code);
 		if (empty($this->language_code))
 			$this->language_code = $this->iso_code;
 
@@ -412,38 +413,49 @@ class LanguageCore extends ObjectModel
 
 			foreach ($langTables as $name)
 			{
+				preg_match('#^'.preg_quote(_DB_PREFIX_).'(.+)_lang$#i', $name, $m);
+				$identifier = 'id_'.$m[1];
+
 				$fields = '';
 				// We will check if the table contains a column "id_shop"
 				// If yes, we will add "id_shop" as a WHERE condition in queries copying data from default language
-				$shop_field_exists = false;
+				$shop_field_exists = $primary_key_exists = false;
 				$columns = Db::getInstance()->executeS('SHOW COLUMNS FROM `'.$name.'`');
 				foreach ($columns as $column)
 				{
 					$fields .= $column['Field'].', ';
 					if ($column['Field'] == 'id_shop')
 						$shop_field_exists = true;
+					if ($column['Field'] == $identifier)
+						$primary_key_exists = true;
 				}
 				$fields = rtrim($fields, ', ');
-				preg_match('#^'.preg_quote(_DB_PREFIX_).'(.+)_lang$#i', $name, $m);
-				$identifier = 'id_'.$m[1];
+				
+				if (!$primary_key_exists)
+					continue;
 
 				$sql = 'INSERT IGNORE INTO `'.$name.'` ('.$fields.') (SELECT ';
 
 				// For each column, copy data from default language
+				reset($columns);
 				foreach ($columns as $column)
 				{
 					if ($identifier != $column['Field'] && $column['Field'] != 'id_lang')
 					{
-						$sql .= '(SELECT `'.$column['Field'].'`	FROM `'.$name.'` tl	WHERE tl.`id_lang` = '.(int)$id_lang_default
-									.($shop_field_exists ? ' AND tl.`id_shop` = '.(int)$shop->id : '')
-									.' AND tl.`'.$identifier.'` = `'.str_replace('_lang', '', $name).'`.`'.$identifier.'`), ';
+						$sql .= '(
+							SELECT `'.bqSQL($column['Field']).'`
+							FROM `'.bqSQL($name).'` tl
+							WHERE tl.`id_lang` = '.(int)$id_lang_default.'
+							'.($shop_field_exists ? ' AND tl.`id_shop` = '.(int)$shop->id : '').'
+							AND tl.`'.bqSQL($identifier).'` = `'.bqSQL(str_replace('_lang', '', $name)).'`.`'.bqSQL($identifier).'`
+						),';
 					}
 					else
-						$sql .= '`'.$column['Field'].'`, ';
+						$sql .= '`'.bqSQL($column['Field']).'`,';
 				}
 				$sql = rtrim($sql, ', ');
-				$sql .= ' FROM `'._DB_PREFIX_.'lang` CROSS JOIN `'.str_replace('_lang', '', $name).'`) ;';
-				$return &= Db::getInstance()->execute(pSQL($sql));
+				$sql .= ' FROM `'._DB_PREFIX_.'lang` CROSS JOIN `'.bqSQL(str_replace('_lang', '', $name)).'`)';
+				$return &= Db::getInstance()->execute($sql);
 			}
 		}
 		return $return;
@@ -676,7 +688,7 @@ class LanguageCore extends ObjectModel
 					$query .= '(';
 					$row2['id_lang'] = $to;
 					foreach ($row2 as $field)
-						$query .= '\''.pSQL($field, true).'\',';
+						$query .= (!is_string($field) && $field == NULL) ? 'NULL,' : '\''.pSQL($field, true).'\',';
 					$query = rtrim($query, ',').'),';
 				}
 				$query = rtrim($query, ',');
@@ -795,7 +807,7 @@ class LanguageCore extends ObjectModel
 
 	public static function countActiveLanguages($id_shop = null)
 	{
-		if ($id_shop === null)
+		if (isset(Context::getContext()->shop) && is_object(Context::getContext()->shop) && $id_shop === null)
 			$id_shop = (int)Context::getContext()->shop->id;
 
 		if (!isset(self::$countActiveLanguages[$id_shop]))
@@ -924,6 +936,7 @@ class LanguageCore extends ObjectModel
 		$languages = Language::getLanguages(false);
 		foreach ($languages as $lang)
 		{
+			$gz = false;
 			$files_listing = array();
 			foreach ($modules_list as $module_name)
 			{
@@ -944,7 +957,8 @@ class LanguageCore extends ObjectModel
 					if (isset($file['filename']) && is_string($file['filename']))
 						$files_listing[] = $file['filename'];
 			}
-			$gz->extractList($files_listing, _PS_TRANSLATIONS_DIR_.'../', '');
+			if ($gz)
+				$gz->extractList($files_listing, _PS_TRANSLATIONS_DIR_.'../', '');
 		}
 	}
 }

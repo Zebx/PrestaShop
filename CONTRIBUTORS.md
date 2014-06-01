@@ -1,4 +1,5 @@
 - adonis karavokyros
+- Adonis Karavokyros
 - Adrien
 - aFolletete
 - Agence CINS
@@ -36,6 +37,7 @@
 - CINS
 - cippest
 - cmouleyre
+- codvir
 - Corentin Delcourt
 - Cosmin Hutanu
 - Damien Metzger
@@ -43,6 +45,8 @@
 - Damon Skelhorn
 - Daniel
 - Daniele Giachino
+- danoosh
+- Danoosh Mir
 - David Gasperoni
 - Davy Rolink
 - Dh42
@@ -60,6 +64,7 @@
 - DrÿSs
 - DrÿSs'
 - dSevere
+- Dvir Julius
 - edamart
 - Edouard Gaulué
 - emilien-puget
@@ -75,6 +80,7 @@
 - fram
 - Francois Gaillard
 - François Gaillard
+- François-Marie de Jouvencel
 - Fran�ois Gaillard
 - fSerny
 - Gabriel Schwardy
@@ -82,6 +88,7 @@
 - Gamesh
 - gBrunier
 - gCharmes
+- Gordon Coubrough
 - gPoulain
 - gr4devel
 - Granger Kevin
@@ -111,10 +118,12 @@
 - jmCollin
 - jObregon
 - Jonathan Danse
+- Jonathan SAHM
 - joseantgv
 - Julien
 - julienbourdeau
 - Julien Bourdeau
+- Kévin Dunglas
 - Kevin Granger
 - kiropowered
 - kpodemski
@@ -153,6 +162,7 @@
 - mMarinetti
 - montes
 - MustangZhong
+- natrim
 - neemzy
 - nezenmoins
 - Nicolas Sorosac
@@ -178,6 +188,7 @@
 - pxls
 - quadrateam
 - Quentin Montant
+- Quetzacoalt91
 - Raphaël Malié
 - raulgundin
 - Rémi Gaillard
@@ -186,6 +197,7 @@
 - Rimas Kudelis
 - rMalie
 - rMontagne
+- robert
 - romainberger
 - root
 - runningz
@@ -212,8 +224,10 @@
 - Sylvain Gougouzian
 - Sylvain WITMEYER
 - tDidierjean
+- Thibaud Chauviere
 - thoma202
 - Thomas Blanc
+- Thomas Nabord
 - timsit
 - TMMeilleur
 - Tomasz Slominski
@@ -229,6 +243,7 @@
 - vinzter
 - vKham
 - vSchoener
+- web-plus
 - Xavier
 - Xavier Borderie
 - Xavier POITAU

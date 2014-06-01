@@ -40,7 +40,7 @@ class ProductControllerCore extends FrontController
 		if (!$this->useMobileTheme())
 		{
 			$this->addCSS(_THEME_CSS_DIR_.'product.css');
-			$this->addCSS(_THEME_CSS_DIR_.'print.css');
+			$this->addCSS(_THEME_CSS_DIR_.'print.css', 'print');
 			$this->addJqueryPlugin(array('fancybox', 'idTabs', 'scrollTo', 'serialScroll', 'bxslider'));
 			$this->addJS(array(
 				_THEME_JS_DIR_.'tools.js',  // retro compat themes 1.5
@@ -145,9 +145,9 @@ class ProductControllerCore extends FrontController
 					// If the previous page was a category and is a parent category of the product use this category as parent category
 					$id_object = false;
 					if (isset($regs[1]) && is_numeric($regs[1]))
-						$id_object = (int)$regs[2];
+						$id_object = (int)$regs[1];
 					elseif (isset($regs[5]) && is_numeric($regs[5]))
-						$id_object = (int)$regs[6];
+						$id_object = (int)$regs[5];
 					if ($id_object)
 					{
 						$referers = array($_SERVER['HTTP_REFERER'],urldecode($_SERVER['HTTP_REFERER']));
@@ -340,10 +340,11 @@ class ProductControllerCore extends FrontController
 			'ecotax_tax_exc' => Tools::ps_round($this->product->ecotax, 2),
 			'ecotaxTax_rate' => $ecotax_rate,
 			'productPriceWithoutEcoTax' => (float)$product_price_without_eco_tax,
-			'group_reduction' => (1 - $group_reduction),
+			'group_reduction' => $group_reduction,
 			'no_tax' => Tax::excludeTaxeOption() || !$this->product->getTaxesRate($address),
 			'ecotax' => (!count($this->errors) && $this->product->ecotax > 0 ? Tools::convertPrice((float)$this->product->ecotax) : 0),
-			'tax_enabled' => Configuration::get('PS_TAX')
+			'tax_enabled' => Configuration::get('PS_TAX'),
+			'customer_group_without_tax' => Group::getPriceDisplayMethod($this->context->customer->id_default_group),
 		));
 	}
 
@@ -469,27 +470,43 @@ class ProductControllerCore extends FrontController
 				else
 				{
 					$combinations[$row['id_product_attribute']]['id_image'] = $id_image = (int)$combination_images[$row['id_product_attribute']][0]['id_image'];
-					if ($row['default_on'] && $id_image > 0)
+					if ($row['default_on'])
 					{
-						if (isset($this->context->smarty->tpl_vars['images']->value))
-							$product_images = $this->context->smarty->tpl_vars['images']->value;
-						if (isset($product_images) && is_array($product_images) && isset($product_images[$id_image]))
-						{
-							$product_images[$id_image]['cover'] = 1;
-							$this->context->smarty->assign('mainImage', $product_images[$id_image]);
-							if (count($product_images))
-								$this->context->smarty->assign('images', $product_images);
-						}
 						if (isset($this->context->smarty->tpl_vars['cover']->value))
-							$cover = $this->context->smarty->tpl_vars['cover']->value;
-						if (isset($cover) && is_array($cover) && isset($product_images) && is_array($product_images))
+							$current_cover = $this->context->smarty->tpl_vars['cover']->value;
+
+						if (is_array($combination_images[$row['id_product_attribute']]))
 						{
-							$product_images[$cover['id_image']]['cover'] = 0;
-							if (isset($product_images[$id_image]))
-								$cover = $product_images[$id_image];
-							$cover['id_image'] = (Configuration::get('PS_LEGACY_IMAGES') ? ($this->product->id.'-'.$id_image) : (int)$id_image);
-							$cover['id_image_only'] = (int)$id_image;
-							$this->context->smarty->assign('cover', $cover);
+							foreach ($combination_images[$row['id_product_attribute']] as $tmp) 
+								if ($tmp['id_image'] == $current_cover['id_image'])
+								{
+									$combinations[$row['id_product_attribute']]['id_image'] = $id_image = (int)$tmp['id_image'];
+									break;
+								}
+						}
+
+						if ($id_image > 0)
+						{
+							if (isset($this->context->smarty->tpl_vars['images']->value))
+								$product_images = $this->context->smarty->tpl_vars['images']->value;
+							if (isset($product_images) && is_array($product_images) && isset($product_images[$id_image]))
+							{
+								$product_images[$id_image]['cover'] = 1;
+								$this->context->smarty->assign('mainImage', $product_images[$id_image]);
+								if (count($product_images))
+									$this->context->smarty->assign('images', $product_images);
+							}
+							if (isset($this->context->smarty->tpl_vars['cover']->value))
+								$cover = $this->context->smarty->tpl_vars['cover']->value;
+							if (isset($cover) && is_array($cover) && isset($product_images) && is_array($product_images))
+							{
+								$product_images[$cover['id_image']]['cover'] = 0;
+								if (isset($product_images[$id_image]))
+									$cover = $product_images[$id_image];
+								$cover['id_image'] = (Configuration::get('PS_LEGACY_IMAGES') ? ($this->product->id.'-'.$id_image) : (int)$id_image);
+								$cover['id_image_only'] = (int)$id_image;
+								$this->context->smarty->assign('cover', $cover);
+							}
 						}
 					}
 				}
@@ -554,7 +571,7 @@ class ProductControllerCore extends FrontController
 			$path = Tools::getPath($this->category->id, $this->product->name, true);
 		elseif (Category::inShopStatic($this->product->id_category_default, $this->context->shop))
 		{
-			$this->category = new Category((int)$this->product->id_category_default);
+			$this->category = new Category((int)$this->product->id_category_default, (int)$this->context->language->id);
 			if (Validate::isLoadedObject( $this->category) &&  $this->category->active &&  $this->category->isAssociatedToShop())
 				$path = Tools::getPath((int)$this->product->id_category_default, $this->product->name);
 		}

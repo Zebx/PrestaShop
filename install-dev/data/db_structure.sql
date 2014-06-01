@@ -262,7 +262,9 @@ CREATE TABLE `PREFIX_cart_rule_carrier` (
 CREATE TABLE `PREFIX_cart_rule_combination` (
 	`id_cart_rule_1` int(10) unsigned NOT NULL,
 	`id_cart_rule_2` int(10) unsigned NOT NULL,
-	PRIMARY KEY (`id_cart_rule_1`, `id_cart_rule_2`)
+	PRIMARY KEY (`id_cart_rule_1`, `id_cart_rule_2`),
+	KEY `id_cart_rule_1` (`id_cart_rule_1`),
+	KEY `id_cart_rule_2` (`id_cart_rule_2`)
 ) ENGINE=ENGINE_TYPE DEFAULT CHARSET=utf8;
 
 CREATE TABLE `PREFIX_cart_rule_product_rule_group` (
@@ -607,16 +609,16 @@ CREATE TABLE `PREFIX_customer_group` (
 
 CREATE TABLE `PREFIX_customer_message` (
   `id_customer_message` int(10) unsigned NOT NULL auto_increment,
-  `id_customer_thread` int(11) default NULL,
-  `id_employee` int(10) unsigned default NULL,
+  `id_customer_thread` int(11) DEFAULT NULL,
+  `id_employee` int(10) unsigned DEFAULT NULL,
   `message` text NOT NULL,
   `file_name` varchar(18) DEFAULT NULL,
-  `ip_address` int(11) default NULL,
-  `user_agent` varchar(128) default NULL,
+  `ip_address`  varchar(16) DEFAULT NULL,
+  `user_agent` varchar(128) DEFAULT NULL,
   `date_add` datetime NOT NULL,
   `date_upd` datetime NOT NULL,
   `private` TINYINT NOT NULL DEFAULT  '0',
-  `read` tinyint(1) NOT NULL default '0',
+  `read` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id_customer_message`),
   KEY `id_customer_thread` (`id_customer_thread`),
   KEY `id_employee` (`id_employee`)
@@ -1119,6 +1121,7 @@ CREATE TABLE `PREFIX_orders` (
   KEY `id_address_delivery` (`id_address_delivery`),
   KEY `id_address_invoice` (`id_address_invoice`),
   KEY `id_shop_group` (`id_shop_group`),
+  KEY (`current_state`),
   KEY `id_shop` (`id_shop`),
   INDEX `date_add`(`date_add`)
 ) ENGINE=ENGINE_TYPE DEFAULT CHARSET=utf8;
@@ -1128,7 +1131,7 @@ CREATE TABLE `PREFIX_order_detail_tax` (
   `id_tax` int(11) NOT NULL,
   `unit_amount` DECIMAL(16, 6) NOT NULL DEFAULT '0.00',
   `total_amount` DECIMAL(16, 6) NOT NULL DEFAULT '0.00',
-   PRIMARY KEY (`id_order_detail`),
+   KEY (`id_order_detail`),
    KEY `id_tax` (`id_tax`)
 ) ENGINE=ENGINE_TYPE DEFAULT CHARSET=utf8;
 
@@ -1159,7 +1162,8 @@ CREATE TABLE IF NOT EXISTS `PREFIX_order_invoice_tax` (
   `id_order_invoice` int(11) NOT NULL,
   `type` varchar(15) NOT NULL,
   `id_tax` int(11) NOT NULL,
-  `amount` decimal(10,6) NOT NULL DEFAULT '0.000000'
+  `amount` decimal(10,6) NOT NULL DEFAULT '0.000000',
+  KEY `id_tax` (`id_tax`)
 ) ENGINE=ENGINE_TYPE  DEFAULT CHARSET=utf8;
 
 CREATE TABLE `PREFIX_order_detail` (
@@ -1784,6 +1788,7 @@ CREATE TABLE `PREFIX_tab` (
   `module` varchar(64) NULL,
   `position` int(10) unsigned NOT NULL,
   `active` tinyint(1) NOT NULL DEFAULT 1,
+  `hide_host_mode` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id_tab`),
   KEY `class_name` (`class_name`),
   KEY `id_parent` (`id_parent`)

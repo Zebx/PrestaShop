@@ -104,6 +104,7 @@ class AdminOrdersControllerCore extends AdminController
 				'align' => 'text-right',
 				'type' => 'price',
 				'currency' => true,
+				'callback' => 'setOrderCurrency',
 				'badge_success' => true
 			),
 			'payment' => array(
@@ -111,8 +112,8 @@ class AdminOrdersControllerCore extends AdminController
 			),
 			'osname' => array(
 				'title' => $this->l('Status'),
-				'color' => 'color',
 				'type' => 'select',
+				'color' => 'color',
 				'list' => $this->statuses_array,
 				'filter_key' => 'os!id_order_state',
 				'filter_type' => 'int',
@@ -180,6 +181,12 @@ class AdminOrdersControllerCore extends AdminController
 		parent::__construct();
 	}
 
+	public static function setOrderCurrency($echo, $tr)
+	{
+		$order = new Order($tr['id_order']);
+		return Tools::displayPrice($echo, (int)$order->id_currency);
+	}
+
 	public function initPageHeaderToolbar()
 	{
 		parent::initPageHeaderToolbar();
@@ -229,7 +236,7 @@ class AdminOrdersControllerCore extends AdminController
 			'recyclable_pack' => (int)Configuration::get('PS_RECYCLABLE_PACK'),
 			'gift_wrapping' => (int)Configuration::get('PS_GIFT_WRAPPING'),
 			'cart' => $cart,
-			'currencies' => Currency::getCurrencies(),
+			'currencies' => Currency::getCurrenciesByIdShop(Context::getContext()->shop->id),
 			'langs' => Language::getLanguages(true, Context::getContext()->shop->id),
 			'payment_modules' => $payment_modules,
 			'order_states' => OrderState::getOrderStates((int)Context::getContext()->language->id),
@@ -246,7 +253,11 @@ class AdminOrdersControllerCore extends AdminController
 	{
 		if ($this->display == 'view')
 		{
-			$order = new Order((int)Tools::getValue('id_order'));
+			$order = $this->loadObject();
+			$customer = $this->context->customer;
+
+			$this->toolbar_title[] = sprintf($this->l('Order %1$s from %2$s %3$s'), $order->reference, $customer->firstname, $customer->lastname);
+
 			if ($order->hasBeenShipped())
 				$type = $this->l('Return products');
 			elseif ($order->hasBeenPaid())
@@ -455,7 +466,7 @@ class AdminOrdersControllerCore extends AdminController
 				$this->errors[] = Tools::displayError('You do not have permission to edit this.');
 		}
 
-		/* Change order state, add a new entry in order history and send an e-mail to the customer if needed */
+		/* Change order status, add a new entry in order history and send an e-mail to the customer if needed */
 		elseif (Tools::isSubmit('submitState') && isset($order))
 		{
 			if ($this->tabAccess['edit'] === '1')
@@ -1399,7 +1410,7 @@ class AdminOrdersControllerCore extends AdminController
 		$helper->color = 'color2';
 		$helper->title = $this->l('Abandoned Carts', null, null, false);
 		$helper->subtitle = $this->l('Today', null, null, false);
-		$helper->href = $this->context->link->getAdminLink('AdminCarts');
+		$helper->href = $this->context->link->getAdminLink('AdminCarts').'&action=filterOnlyAbandonedCarts';
 		if (ConfigurationKPI::get('ABANDONED_CARTS') !== false)
 			$helper->value = ConfigurationKPI::get('ABANDONED_CARTS');
 		if (ConfigurationKPI::get('ABANDONED_CARTS_EXPIRE') < $time)
@@ -1539,6 +1550,11 @@ class AdminOrdersControllerCore extends AdminController
 
 		$gender = new Gender((int)$customer->id_gender, $this->context->language->id);
 
+		$history = $order->getHistory($this->context->language->id);
+
+		foreach ($history as &$order_state)
+			$order_state['text-color'] = Tools::getBrightness($order_state['color']) < 128 ? 'white' : 'black';
+
 		// Smarty assign
 		$this->tpl_view_vars = array(
 			'order' => $order,
@@ -1562,13 +1578,13 @@ class AdminOrdersControllerCore extends AdminController
 			'orderMessages' => OrderMessage::getOrderMessages($order->id_lang),
 			'messages' => Message::getMessagesByOrderId($order->id, true),
 			'carrier' => new Carrier($order->id_carrier),
-			'history' => $order->getHistory($this->context->language->id),
+			'history' => $history,
 			'states' => OrderState::getOrderStates($this->context->language->id),
 			'warehouse_list' => $warehouse_list,
 			'sources' => ConnectionsSource::getOrderSources($order->id),
 			'currentState' => $order->getCurrentOrderState(),
 			'currency' => new Currency($order->id_currency),
-			'currencies' => Currency::getCurrencies(),
+			'currencies' => Currency::getCurrenciesByIdShop($order->id_shop),
 			'previousOrder' => $order->getPreviousOrderId(),
 			'nextOrder' => $order->getNextOrderId(),
 			'current_index' => self::$currentIndex,
@@ -1581,20 +1597,30 @@ class AdminOrdersControllerCore extends AdminController
 			'not_paid_invoices_collection' => $order->getNotPaidInvoicesCollection(),
 			'payment_methods' => $payment_methods,
 			'invoice_management_active' => Configuration::get('PS_INVOICE', null, null, $order->id_shop),
-			'display_warehouse' => (int)Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT')
+			'display_warehouse' => (int)Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT'),
+			'HOOK_CONTENT_ORDER' => Hook::exec('displayAdminOrderContentOrder', array(
+				'order' => $order,
+				'products' => $products,
+				'customer' => $customer)
+			),
+			'HOOK_CONTENT_SHIP' => Hook::exec('displayAdminOrderContentShip', array(
+				'order' => $order,
+				'products' => $products,
+				'customer' => $customer)
+			),
+			'HOOK_TAB_ORDER' => Hook::exec('displayAdminOrderTabOrder', array(
+				'order' => $order,
+				'products' => $products,
+				'customer' => $customer)
+			),
+			'HOOK_TAB_SHIP' => Hook::exec('displayAdminOrderTabShip', array(
+				'order' => $order,
+				'products' => $products,
+				'customer' => $customer)
+			),
 		);
 
 		return parent::renderView();
-	}
-
-	public function ajaxProcessSearchCustomers()
-	{
-		if ($customers = Customer::searchByName(pSQL(Tools::getValue('customer_search'))))
-			$to_return = array('customers' => $customers,
-									'found' => true);
-		else
-			$to_return = array('found' => false);
-		$this->content = Tools::jsonEncode($to_return);
 	}
 
 	public function ajaxProcessSearchProducts()

@@ -29,6 +29,8 @@ class ToolsCore
 	protected static $file_exists_cache = array();
 	protected static $_forceCompile;
 	protected static $_caching;
+	protected static $_user_plateform;
+	protected static $_user_browser;
 
 	/**
 	* Random password generator
@@ -151,7 +153,7 @@ class ToolsCore
 	public static function getShopProtocol()
 	{
 		$protocol = (Configuration::get('PS_SSL_ENABLED') || (!empty($_SERVER['HTTPS'])
-			&& strtolower($_SERVER['HTTPS']) != 'off')) ? 'https://' : 'http://';
+			&& Tools::strtolower($_SERVER['HTTPS']) != 'off')) ? 'https://' : 'http://';
 		return $protocol;
 	}
 
@@ -717,17 +719,22 @@ class ToolsCore
 			if ($files = scandir($dirname))
 			{
 				foreach ($files as $file)
-
     				if ($file != '.' && $file != '..' && $file != '.svn')
     				{
     					if (is_dir($dirname.$file))
     						Tools::deleteDirectory($dirname.$file, true);
     					elseif (file_exists($dirname.$file))
-    						unlink($dirname.$file);
+						{
+							@chmod($dirname.$file, 0777); // NT ?
+							unlink($dirname.$file);
+						}
     				}
-				if ($delete_self)
+				if ($delete_self && file_exists($dirname))
 					if (!rmdir($dirname))
+					{
+						@chmod($dirname, 0777); // NT ?
                         return false;
+					}
                 return true;                    
 			}
         return false;
@@ -745,21 +752,12 @@ class ToolsCore
 			$exclude_files = array($exclude_files);
 
 		if (file_exists($file) && is_file($file) && array_search(basename($file), $exclude_files) === FALSE)
+		{
+			@chmod($dirname.$file, 0777); // NT ?
 			unlink($file);
+		}
     }
-    
-	/**
-	* Clear smarty cache folders
- 	*/
-	public static function clearSmartyCache()
-	{
-		foreach (array(_PS_CACHE_DIR_.'smarty/cache', _PS_CACHE_DIR_.'smarty/compile') as $dir)
-			if (file_exists($dir))
-				foreach (scandir($dir) as $file)
-					if ($file[0] != '.' && $file != 'index.php')
-						self::deleteDirectory($dir.DIRECTORY_SEPARATOR.$file);
-	}
-    
+        
 	/**
 	* Clear XML cache folder
  	*/
@@ -1043,6 +1041,7 @@ class ToolsCore
 				$sql = 'SELECT c.id_category, cl.name, cl.link_rewrite
 						FROM '._DB_PREFIX_.'category c
 						LEFT JOIN '._DB_PREFIX_.'category_lang cl ON (cl.id_category = c.id_category'.Shop::addSqlRestrictionOnLang('cl').')
+						'.Shop::addSqlAssociation('category', 'c').'
 						WHERE c.nleft <= '.$interval['nleft'].'
 							AND c.nright >= '.$interval['nright'].'
 							AND c.nleft >= '.$interval_root['nleft'].'
@@ -1152,13 +1151,13 @@ class ToolsCore
 		else
 			$str = preg_replace('/[^a-zA-Z0-9\s\'\:\/\[\]-]/','', $str);
 
-		$str = preg_replace('/[\s\'\:\/\[\]-]+/', ' ', $str);
+		$str = preg_replace('/[\s\'\:\/\[\]\-]+/', ' ', $str);
 		$str = str_replace(array(' ', '/'), '-', $str);
 
 		// If it was not possible to lowercase the string with mb_strtolower, we do it after the transformations.
 		// This way we lose fewer special chars.
 		if (!function_exists('mb_strtolower'))
-			$str = strtolower($str);
+			$str = Tools::strtolower($str);
 
 		return $str;
 	}
@@ -1412,7 +1411,8 @@ class ToolsCore
 	{
 		$last = $directory[strlen($directory) - 1];
 
-		if (in_array($last, array('/', '\\'))) {
+		if (in_array($last, array('/', '\\')))
+		{
 			$directory[strlen($directory) - 1] = DIRECTORY_SEPARATOR;
 			return $directory;
 		}
@@ -1542,14 +1542,14 @@ class ToolsCore
 	{
 		if (function_exists('mb_convert_case'))
 			return mb_convert_case($str, MB_CASE_TITLE);
-		return ucwords(strtolower($str));
+		return ucwords(Tools::strtolower($str));
 	}
 
 	public static function orderbyPrice(&$array, $order_way)
 	{
 		foreach ($array as &$row)
 			$row['price_tmp'] = Product::getPriceStatic($row['id_product'], true, ((isset($row['id_product_attribute']) && !empty($row['id_product_attribute'])) ? (int)$row['id_product_attribute'] : null), 2);
-		if (strtolower($order_way) == 'desc')
+		if (Tools::strtolower($order_way) == 'desc')
 			uasort($array, 'cmpPriceDesc');
 		else
 			uasort($array, 'cmpPriceAsc');
@@ -1734,7 +1734,7 @@ class ToolsCore
 	{
 		// 'CMSCategories' => 'cms_categories'
 		// 'RangePrice' => 'range_price'
-		return strtolower(trim(preg_replace('/([A-Z][a-z])/', '_$1', $string), '_'));
+		return Tools::strtolower(trim(preg_replace('/([A-Z][a-z])/', '_$1', $string), '_'));
 	}
 
 	public static function getBrightness($hex)
@@ -1809,7 +1809,7 @@ class ToolsCore
 		$protocol_link = Tools::getCurrentUrlProtocolPrefix();
 		if (array_key_exists(1, $matches) && array_key_exists(2, $matches))
 		{
-			if (!preg_match('/^https?:\/\//iUs', $matches[2]))
+			if (!preg_match('/^(?:https?:)?\/\//iUs', $matches[2]))
 			{
 				$tmp = dirname($current_css_file).'/'.$matches[2];
 				return $matches[1].$protocol_link.Tools::getMediaServer($tmp).$tmp;
@@ -1867,7 +1867,7 @@ class ToolsCore
 
 	public static function getMediaServer($filename)
 	{
-		if (self::$_cache_nb_media_servers === null)
+		if (self::$_cache_nb_media_servers === null && defined('_MEDIA_SERVER_1_') && defined('_MEDIA_SERVER_2_') && defined('_MEDIA_SERVER_3_'))
 		{
 			if (_MEDIA_SERVER_1_ == '')
 				self::$_cache_nb_media_servers = 0;
@@ -1974,7 +1974,7 @@ class ToolsCore
 
 		fwrite($write_fd, "RewriteEngine on\n");
 	
-		if (!$medias)
+		if (!$medias && defined('_MEDIA_SERVER_1_') && defined('_MEDIA_SERVER_2_') && defined('_MEDIA_SERVER_3_'))
 			$medias = array(_MEDIA_SERVER_1_, _MEDIA_SERVER_2_, _MEDIA_SERVER_3_);
 		
 		$media_domains = '';
@@ -2109,7 +2109,7 @@ class ToolsCore
 	ExpiresByType application/javascript \"access plus 1 week\"
 	ExpiresByType application/x-javascript \"access plus 1 week\"
 	ExpiresByType image/x-icon \"access plus 1 year\"
-	ExpiresByType image/svg+xml \"access plus 1 year
+	ExpiresByType image/svg+xml \"access plus 1 year\"
 	ExpiresByType image/vnd.microsoft.icon \"access plus 1 year\"
 	ExpiresByType application/font-woff \"access plus 1 year\"
 	ExpiresByType application/x-font-woff \"access plus 1 year\"
@@ -2142,10 +2142,18 @@ FileETag INode MTime Size
 		if ($specific_after)
 			fwrite($write_fd, "\n\n".trim($specific_after));
 		fclose($write_fd);
-
-		Hook::exec('actionHtaccessCreate');
+		
+		if (!defined('PS_INSTALLATION_IN_PROGRESS'))
+			Hook::exec('actionHtaccessCreate');
 
 		return true;
+	}
+
+	public static function generateIndex()
+	{
+		if (defined('_DB_PREFIX_') && Configuration::get('PS_DISABLE_OVERRIDES'))
+			PrestaShopAutoload::getInstance()->_include_override_path = false;
+		PrestaShopAutoload::getInstance()->generateIndex();
 	}
 	
 	public static function getDefaultIndexContent()
@@ -2186,7 +2194,6 @@ header("Pragma: no-cache");
 header("Location: ../");
 exit;
 ';
-		
 	}
 
 	/**
@@ -2318,7 +2325,9 @@ exit;
 
 	public static function str_replace_once($needle, $replace, $haystack)
 	{
-		$pos = strpos($haystack, $needle);
+		$pos = false;
+		if ($needle)
+			$pos = strpos($haystack, $needle);
 		if ($pos === false)
 			return $haystack;
 		return substr_replace($haystack, $replace, $pos, strlen($needle));
@@ -2412,7 +2421,7 @@ exit;
 		{
 			require_once(_PS_ROOT_DIR_.'/tools/pclzip/pclzip.lib.php');
 			$zip = new PclZip($from_file);
-			$list = $zip->extract(PCLZIP_OPT_PATH, $to_dir);
+			$list = $zip->extract(PCLZIP_OPT_PATH, $to_dir, PCLZIP_OPT_REPLACE_NEWER);
 			foreach ($list as $file)
 				if ($file['status'] != 'ok' && $file['status'] != 'already_a_directory')
 					return false;
@@ -2502,7 +2511,7 @@ exit;
 		{
 			$value_length = strlen($value);
 			$qty = (int)substr($value, 0, $value_length - 1 );
-			$unit = strtolower(substr($value, $value_length - 1));
+			$unit = Tools::strtolower(substr($value, $value_length - 1));
 			switch ($unit)
 			{
 				case 'k':
@@ -2585,6 +2594,30 @@ exit;
 			return $smarty->clearAllCache();
 
 		return $smarty->clearCache($tpl, $cache_id, $compile_id);
+	}
+
+	/**
+	 * Clear compile for Smarty
+ 	*/
+	public static function clearCompile($smarty = null)
+	{
+		if ($smarty === null)
+			$smarty = Context::getContext()->smarty;
+
+		if ($smarty === null)
+			return;
+
+		return $smarty->clearCompiledTemplate();
+	}
+
+	/**
+	* Clear Smarty cache and compile folders
+ 	*/
+	public static function clearSmartyCache()
+	{
+		$smarty = Context::getContext()->smarty;
+		Tools::clearCache($smarty);
+		Tools::clearCompile($smarty);
 	}
 
 	/**
@@ -2698,6 +2731,38 @@ exit;
 		return false;
 	}
 
+	/**
+	 * Copy the folder $src into $dst, $dst is created if it do not exist
+	 * @param      $src
+	 * @param      $dst
+	 * @param bool $del if true, delete the file after copy
+	 */
+	public static function recurseCopy($src, $dst, $del = false)
+	{
+		if (!Tools::file_exists_cache($src))
+			return false;
+		$dir = opendir($src);
+
+		if (!Tools::file_exists_cache($dst))
+			mkdir($dst);
+		while (false !== ($file = readdir($dir)))
+		{
+			if (($file != '.') && ($file != '..'))
+			{
+				if (is_dir($src.DIRECTORY_SEPARATOR.$file))
+					self::recurseCopy($src.DIRECTORY_SEPARATOR.$file, $dst.DIRECTORY_SEPARATOR.$file, $del);
+				else
+				{
+					copy($src.DIRECTORY_SEPARATOR.$file, $dst.DIRECTORY_SEPARATOR.$file);
+					if ($del && is_writable($src.DIRECTORY_SEPARATOR.$file))
+						unlink($src.DIRECTORY_SEPARATOR.$file);
+				}
+			}
+		}
+		closedir($dir);
+		if ($del && is_writable($src))
+			rmdir($src);
+	}
 
 	/**
 	 * @params string $path Path to scan
@@ -2785,7 +2850,7 @@ exit;
 	{
 		if (Tools::apacheModExists('mod_rewrite'))
 			return true;
-		if ((isset($_SERVER['HTTP_MOD_REWRITE']) && strtolower($_SERVER['HTTP_MOD_REWRITE']) == 'on') || strtolower(getenv('HTTP_MOD_REWRITE')) == 'on')
+		if ((isset($_SERVER['HTTP_MOD_REWRITE']) && Tools::strtolower($_SERVER['HTTP_MOD_REWRITE']) == 'on') || Tools::strtolower(getenv('HTTP_MOD_REWRITE')) == 'on')
 				return true;
 		return false;
 	}
@@ -2844,15 +2909,29 @@ exit;
 				$protocols[] = 'http';
 				$postData .= '&method=listing&action=native';
 				break;
+			case 'native_all':
+				$protocols[] = 'http';
+				$postData .= '&method=listing&action=native&iso_code=all';
+				break;
 			case 'must-have':
 				$protocols[] = 'http';
 				$postData .= '&method=listing&action=must-have';
 				break;
+			case 'must-have-themes':
+				$protocols[] = 'http';
+				$postData .= '&method=listing&action=must-have-themes';
+				break;
 			case 'customer':
 				$postData .= '&method=listing&action=customer&username='.urlencode(trim(Context::getContext()->cookie->username_addons)).'&password='.urlencode(trim(Context::getContext()->cookie->password_addons));
 				break;
+			case 'customer_themes':
+				$postData .= '&method=listing&action=customer-themes&username='.urlencode(trim(Context::getContext()->cookie->username_addons)).'&password='.urlencode(trim(Context::getContext()->cookie->password_addons));
+				break;
 			case 'check_customer':
 				$postData .= '&method=check_customer&username='.urlencode($params['username_addons']).'&password='.urlencode($params['password_addons']);
+				break;
+			case 'check_module':
+				$postData .= '&method=check&module_name='.urlencode($params['module_name']).'&module_key='.urlencode($params['module_key']);
 				break;
 			case 'module':
 				$postData .= '&method=module&id_module='.urlencode($params['id_module']);
@@ -2860,7 +2939,6 @@ exit;
 					$postData .= '&username='.urlencode($params['username_addons']).'&password='.urlencode($params['password_addons']);
 				else
 					$protocols[] = 'http';
-
 				break;
 			case 'install-modules':
 				$protocols[] = 'http';
@@ -2878,6 +2956,7 @@ exit;
 				'timeout' => 5,
 			)
 		));
+		
 		foreach ($protocols as $protocol)
 			if ($content = Tools::file_get_contents($protocol.'://api.addons.prestashop.com', false, $context))
 				return $content;
@@ -2962,6 +3041,58 @@ exit;
 		if (empty($value))
 			$value = false;
 		return (bool)$value;
+	}
+
+	public static function getUserPlatform()
+	{
+		if (isset(self::$_user_plateform))
+			return self::$_user_plateform;
+
+		$user_agent = $_SERVER['HTTP_USER_AGENT'];
+		self::$_user_plateform = 'unknown';
+
+		if (preg_match('/linux/i', $user_agent))
+			self::$_user_plateform = 'Linux';
+		elseif (preg_match('/macintosh|mac os x/i', $user_agent))
+			self::$_user_plateform = 'Mac';
+		elseif (preg_match('/windows|win32/i', $user_agent))
+			self::$_user_plateform = 'Windows';
+
+		return self::$_user_plateform;
+	}
+
+	public static function getUserBrowser()
+	{
+		if (isset(self::$_user_browser))
+			return self::$_user_browser;
+
+		$user_agent = $_SERVER['HTTP_USER_AGENT'];
+		self::$_user_browser = 'unknown';
+
+		if(preg_match('/MSIE/i',$user_agent) && !preg_match('/Opera/i',$user_agent))
+			self::$_user_browser = 'Internet Explorer';
+		elseif(preg_match('/Firefox/i',$user_agent))
+			self::$_user_browser = 'Mozilla Firefox';
+		elseif(preg_match('/Chrome/i',$user_agent))
+			self::$_user_browser = 'Google Chrome';
+		elseif(preg_match('/Safari/i',$user_agent))
+			self::$_user_browser = 'Apple Safari';
+		elseif(preg_match('/Opera/i',$user_agent))
+			self::$_user_browser = 'Opera';
+		elseif(preg_match('/Netscape/i',$user_agent))
+			self::$_user_browser = 'Netscape';
+
+		return self::$_user_browser;
+	}
+
+	/**
+	  * Allows to display the category description without HTML tags and slashes
+	  *
+	  * @return string
+	  */
+	public static function getDescriptionClean($description)
+	{
+		return strip_tags(stripslashes($description));
 	}
 }
 

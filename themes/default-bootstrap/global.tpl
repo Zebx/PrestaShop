@@ -37,11 +37,12 @@
 {if isset($cookie->id_lang)}
 	{addJsDef id_lang=$cookie->id_lang|intval}
 {/if}
-{addJsDefL name=FancyboxboxI18nClose}{l s='Close'}{/addJsDefL}
+{addJsDefL name=FancyboxI18nClose}{l s='Close'}{/addJsDefL}
 {addJsDefL name=FancyboxI18nNext}{l s='Next'}{/addJsDefL}
 {addJsDefL name=FancyboxI18nPrev}{l s='Previous'}{/addJsDefL}
 {addJsDef usingSecureMode=Tools::usingSecureMode()|boolval}
 {addJsDef ajaxsearch=Configuration::get('PS_SEARCH_AJAX')|boolval}
 {addJsDef instantsearch=Configuration::get('PS_INSTANT_SEARCH')|boolval}
 {addJsDef quickView=$quick_view|boolval}
+{addJsDef displayList=Configuration::get('PS_GRID_PRODUCT')|boolval}
 {/strip}

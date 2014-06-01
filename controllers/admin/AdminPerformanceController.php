@@ -90,36 +90,6 @@ class AdminPerformanceControllerCore extends AdminController
 					),
 					'hint' => $this->l('Should be enabled except for debugging.')
 				),
-				array(
-					'type' => 'radio',
-					'label' => $this->l('Debug console'),
-					'name' => 'smarty_console',
-					'values' => array(
-						array(
-							'id' => 'smarty_console_none',
-							'value' => 0,
-							'label' => $this->l('Do not open console.')
-						),
-						array(
-							'id' => 'smarty_console_url',
-							'value' => 1,
-							'label' => $this->l('Open console with URL parameter (SMARTY_DEBUG)'),
-							'hint' => $this->l('To open the debug console, simply pass the SMARTY_DEBUG=1 parameter in the URL.')
-						),
-						array(
-							'id' => 'smarty_console_open',
-							'value' => 2,
-							'label' => $this->l('Always open console'),
-							'hint' => $this->l('Choose this option to always force the debug console to open.')
-						)
-					)
-				),
-				array(
-					'type' => 'text',
-					'label' => $this->l('Debug console key'),
-					'name' => 'smarty_console_key',
-					'hint' => $this->l('You can change the URL parameter for the console (default is SMARTY_DEBUG).')
-				),
 			),
 			'submit' => array(
 				'title' => $this->l('Save')
@@ -357,6 +327,23 @@ class AdminPerformanceControllerCore extends AdminController
 				),
 				array(
 					'type' => 'switch',
+					'label' => $this->l('Move JavaScript at the end'),
+					'name' => 'PS_JS_DEFER',
+					'values' => array(
+						array(
+							'id' => 'PS_JS_DEFER_1',
+							'value' => 1,
+							'label' => $this->l('Move JavaScript at the end of the HTML document')
+						),
+						array(
+							'id' => 'PS_JS_DEFER_0',
+							'value' => 0,
+							'label' => $this->l('Keep JavaScript in HTML as original')
+						)
+					)
+				),
+				array(
+					'type' => 'switch',
 					'label' => $this->l('Apache optimization'),
 					'name' => 'PS_HTACCESS_CACHE_CONTROL',
 					'hint' => $this->l('This will add directives to your .htaccess file, which should improve caching and compression.'),
@@ -384,6 +371,7 @@ class AdminPerformanceControllerCore extends AdminController
 		$this->fields_value['PS_HTML_THEME_COMPRESSION'] = Configuration::get('PS_HTML_THEME_COMPRESSION');
 		$this->fields_value['PS_JS_HTML_THEME_COMPRESSION'] = Configuration::get('PS_JS_HTML_THEME_COMPRESSION');
 		$this->fields_value['PS_HTACCESS_CACHE_CONTROL'] = Configuration::get('PS_HTACCESS_CACHE_CONTROL');
+		$this->fields_value['PS_JS_DEFER'] = Configuration::get('PS_JS_DEFER');
 		$this->fields_value['ccc_up'] = 1;
 	}
 
@@ -578,8 +566,7 @@ class AdminPerformanceControllerCore extends AdminController
 		// Initialize fieldset for a form
 		$this->initFieldsetSmarty();
 
-		if (_PS_MODE_DEV_)
-			$this->initFieldsetDebugMode();
+		$this->initFieldsetDebugMode();
 
 		$this->initFieldsetFeaturesDetachables();
 		$this->initFieldsetCCC();
@@ -618,11 +605,14 @@ class AdminPerformanceControllerCore extends AdminController
 		));
 	}
 
-	public function initToolbar()
+	public function initPageHeaderToolbar()
 	{
-		$this->toolbar_btn['save'] = array(
-			'href' => '#',
-			'desc' => $this->l('Save')
+		parent::initPageHeaderToolbar();
+
+		$this->page_header_toolbar_btn['clear_cache'] = array(
+			'href' => self::$currentIndex.'&token='.$this->token.'&empty_smarty_cache=1',
+			'desc' => $this->l('Clear cache'),
+			'icon' => 'process-icon-eraser'
 		);
 	}
 
@@ -680,8 +670,6 @@ class AdminPerformanceControllerCore extends AdminController
 			{
 				Configuration::updateValue('PS_SMARTY_FORCE_COMPILE', Tools::getValue('smarty_force_compile', _PS_SMARTY_NO_COMPILE_));
 				Configuration::updateValue('PS_SMARTY_CACHE', Tools::getValue('smarty_cache', 0));
-				Configuration::updateValue('PS_SMARTY_CONSOLE', Tools::getValue('smarty_console', 0));
-				Configuration::updateValue('PS_SMARTY_CONSOLE_KEY', Tools::getValue('smarty_console_key', 'SMARTY_DEBUG'));
 				$redirectAdmin = true;
 			}
 			else
@@ -692,11 +680,15 @@ class AdminPerformanceControllerCore extends AdminController
 		{
 			if ($this->tabAccess['edit'] === '1')
 			{
-				if (Tools::getValue('combination') || !Combination::isCurrentlyUsed())
-					Configuration::updateValue('PS_COMBINATION_FEATURE_ACTIVE', Tools::getValue('combination'));
-				if (Tools::getValue('customer_group') && !Group::isCurrentlyUsed())
-					Configuration::updateValue('PS_GROUP_FEATURE_ACTIVE', Tools::getValue('customer_group'));
-				Configuration::updateValue('PS_FEATURE_FEATURE_ACTIVE', Tools::getValue('feature'));
+				if (Tools::isSubmit('combination'))
+					if ((!Tools::getValue('combination') && Combination::isCurrentlyUsed()) === false)
+						Configuration::updateValue('PS_COMBINATION_FEATURE_ACTIVE', (bool)Tools::getValue('combination'));
+
+				if (Tools::isSubmit('customer_group'))
+					if ((!Tools::getValue('customer_group') && Group::isCurrentlyUsed()) === false)
+						Configuration::updateValue('PS_GROUP_FEATURE_ACTIVE', (bool)Tools::getValue('customer_group'));
+
+				Configuration::updateValue('PS_FEATURE_FEATURE_ACTIVE', (bool)Tools::getValue('feature'));
 				$redirectAdmin = true;
 			}
 			else
@@ -714,6 +706,7 @@ class AdminPerformanceControllerCore extends AdminController
 					!Configuration::updateValue('PS_JS_THEME_CACHE', (int)Tools::getValue('PS_JS_THEME_CACHE')) ||
 					!Configuration::updateValue('PS_HTML_THEME_COMPRESSION', (int)Tools::getValue('PS_HTML_THEME_COMPRESSION')) ||
 					!Configuration::updateValue('PS_JS_HTML_THEME_COMPRESSION', (int)Tools::getValue('PS_JS_HTML_THEME_COMPRESSION')) ||
+					!Configuration::updateValue('PS_JS_DEFER', (int)Tools::getValue('PS_JS_DEFER')) ||
 					!Configuration::updateValue('PS_HTACCESS_CACHE_CONTROL', (int)Tools::getValue('PS_HTACCESS_CACHE_CONTROL')))
 					$this->errors[] = Tools::displayError('Unknown error.');
 				else
@@ -895,18 +888,14 @@ class AdminPerformanceControllerCore extends AdminController
 			Tools::clearSmartyCache();
 			Tools::clearXMLCache();
 			Media::clearCache();
-			PrestaShopAutoload::getInstance()->generateIndex();
+			Tools::generateIndex();
 		}
 
-		if (Tools::isSubmit('submitAddconfiguration') && _PS_MODE_DEV_)
+		if (Tools::isSubmit('submitAddconfiguration'))
 		{
 			Configuration::updateGlobalValue('PS_DISABLE_NON_NATIVE_MODULE', (int)Tools::getValue('native_module'));
 			Configuration::updateGlobalValue('PS_DISABLE_OVERRIDES', (int)Tools::getValue('overrides'));
-
-			if (Tools::getValue('overrides'))
-				PrestaShopAutoload::getInstance()->_include_override_path = false;
-
-			PrestaShopAutoload::getInstance()->generateIndex();
+			Tools::generateIndex();
 		}
 
 		if ($redirectAdmin && (!isset($this->errors) || !count($this->errors)))
@@ -916,7 +905,7 @@ class AdminPerformanceControllerCore extends AdminController
 		}
 	}
 
-	public function ajaxProcess()
+	public function displayAjaxTestServer()
 	{
 		/* PrestaShop demo mode */
 		if (_PS_MODE_DEMO_)

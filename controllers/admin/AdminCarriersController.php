@@ -30,9 +30,10 @@ class AdminCarriersControllerCore extends AdminController
 
 	public function __construct()
 	{
-		if ($id_carrier = Tools::getValue('id_carrier'))
+
+		if ($id_carrier = Tools::getValue('id_carrier') && !Tools::isSubmit('deletecarrier') && !Tools::isSubmit('statuscarrier') && !Tools::isSubmit('isFreecarrier') && !Tools::isSubmit('onboarding_carrier'))
 			Tools::redirectAdmin(Context::getContext()->link->getAdminLink('AdminCarrierWizard').'&id_carrier='.(int)$id_carrier);
-		
+
 		$this->bootstrap = true;
 		$this->table = 'carrier';
 		$this->className = 'Carrier';
@@ -105,36 +106,45 @@ class AdminCarriersControllerCore extends AdminController
 			)
 		);
 		parent::__construct();
+		
+		if (Tools::isSubmit('onboarding_carrier'))
+			$this->display = 'view';
 	}
 
 	public function initToolbar()
 	{
 		parent::initToolbar();
 		
-		if (isset($this->toolbar_btn['new']))
-			$this->toolbar_btn['new']['href'] = $this->context->link->getAdminLink('AdminCarrierWizard');
+		if (isset($this->toolbar_btn['new']) && $this->display != 'view')
+			$this->toolbar_btn['new']['href'] = $this->context->link->getAdminLink('AdminCarriers').'&onboarding_carrier';
 	}
 
 	public function initPageHeaderToolbar()
 	{
 		$this->page_header_toolbar_title = $this->l('Carriers');
-		$this->page_header_toolbar_btn['new_carrier'] = array(
-			'href' => $this->context->link->getAdminLink('AdminCarrierWizard'),
-			'desc' => $this->l('Add new carrier', null, null, false),
-			'icon' => 'process-icon-new'
-		);
+		if ($this->display != 'view')
+			$this->page_header_toolbar_btn['new_carrier'] = array(
+				'href' => $this->context->link->getAdminLink('AdminCarriers').'&onboarding_carrier',
+				'desc' => $this->l('Add new carrier', null, null, false),
+				'icon' => 'process-icon-new'
+			);
 
 		parent::initPageHeaderToolbar();
 	}
-
+	
+	public function renderView()
+	{
+		$this->initTabModuleList();
+		$this->filterTabModuleList();
+		$this->tpl_view_vars = array('modules_list' => $this->renderModulesList($this->l('Use recommended shipping')));
+		unset($this->page_header_toolbar_btn['modules-list']);
+		return parent::renderView();
+	}
+	
 	public function renderList()
 	{
 		$this->_select = 'b.*';
-		$this->_join = 'LEFT JOIN `'._DB_PREFIX_.'carrier_lang` b ON a.id_carrier = b.id_carrier'.Shop::addSqlRestrictionOnLang('b').'
-							LEFT JOIN `'._DB_PREFIX_.'carrier_tax_rules_group_shop` ctrgs ON (a.`id_carrier` = ctrgs.`id_carrier`
-								AND ctrgs.id_shop='.(int)$this->context->shop->id.')';
-		$this->_where = 'AND b.id_lang = '.$this->context->language->id;
-
+		$this->_join = 'LEFT JOIN `'._DB_PREFIX_.'carrier_lang` b ON a.id_carrier = b.id_carrier'.Shop::addSqlRestrictionOnLang('b').' AND b.id_lang = '.$this->context->language->id.' LEFT JOIN `'._DB_PREFIX_.'carrier_tax_rules_group_shop` ctrgs ON (a.`id_carrier` = ctrgs.`id_carrier` AND ctrgs.id_shop='.(int)$this->context->shop->id.')';
 		return parent::renderList();
 	}
 
@@ -326,28 +336,28 @@ class AdminCarriersControllerCore extends AdminController
 				),
 				array(
 					'type' => 'text',
-					'label' => $this->l('Maximium package height'),
+					'label' => $this->l('Maximum package height'),
 					'name' => 'max_height',
 					'required' => false,
 					'hint' => $this->l('Maximum height managed by this carrier. Set the value to "0," or leave this field blank to ignore.')
 				),
 				array(
 					'type' => 'text',
-					'label' => $this->l('Maximium package width'),
+					'label' => $this->l('Maximum package width'),
 					'name' => 'max_width',
 					'required' => false,
 					'hint' => $this->l('Maximum width managed by this carrier. Set the value to "0," or leave this field blank to ignore.')
 				),
 				array(
 					'type' => 'text',
-					'label' => $this->l('Maximium package depth'),
+					'label' => $this->l('Maximum package depth'),
 					'name' => 'max_depth',
 					'required' => false,
 					'hint' => $this->l('Maximum depth managed by this carrier. Set the value to "0," or leave this field blank to ignore.')
 				),
 				array(
 					'type' => 'text',
-					'label' => $this->l('Maximium package weight'),
+					'label' => $this->l('Maximum package weight'),
 					'name' => 'max_weight',
 					'required' => false,
 					'hint' => $this->l('Maximum weight managed by this carrier. Set the value to "0," or leave this field blank to ignore.')
@@ -482,7 +492,7 @@ else if ((isset($_GET['status'.$this->table]) || isset($_GET['status'])) && Tool
 			if ($this->tabAccess['edit'] === '1')
 			{
 				if (Tools::getValue('id_carrier') == Configuration::get('PS_CARRIER_DEFAULT'))
-					$this->errors[] = Tools::displayError('You cannot disable the default carrier, however you can change your defeault carrier. ');
+					$this->errors[] = Tools::displayError('You cannot disable the default carrier, however you can change your default carrier. ');
 				else
 					parent::postProcess();
 			}
@@ -706,7 +716,15 @@ else if ((isset($_GET['status'.$this->table]) || isset($_GET['status'])) && Tool
 		else
 			return;
 	}
-
+	
+	protected function initTabModuleList()
+	{
+		if (Tools::isSubmit('onboarding_carrier'))
+		{
+			parent::initTabModuleList();
+			$this->filter_modules_list = $this->tab_modules_list['default_list'] = $this->tab_modules_list['slider_list'];
+		}
+	}
 }
 
 
